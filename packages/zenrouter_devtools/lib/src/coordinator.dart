@@ -115,17 +115,24 @@ class _DebugOverlayState<T extends RouteUnique>
     if (!widget.coordinator._debugOverlayOpen) {
       return Align(
         alignment: Alignment.bottomRight,
-        child: Badge(
-          isLabelVisible: widget.coordinator.problems > 0,
-          label: Text('${widget.coordinator.problems}'),
-          child: FloatingActionButton(
-            mini: true,
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shape: const CircleBorder(side: BorderSide(color: Colors.white24)),
-            onPressed: widget.coordinator.toggleDebugOverlay,
-            child: const Icon(Icons.bug_report, size: 20),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: FloatingActionButton(
+              mini: true,
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: const CircleBorder(
+                side: BorderSide(color: Colors.white24),
+              ),
+              onPressed: widget.coordinator.toggleDebugOverlay,
+              child: Badge(
+                isLabelVisible: widget.coordinator.problems > 0,
+                label: Text('${widget.coordinator.problems}'),
+                child: const Icon(Icons.bug_report, size: 20),
+              ),
+            ),
           ),
         ),
       );
@@ -266,6 +273,7 @@ class _DebugOverlayState<T extends RouteUnique>
           itemBuilder: (context, index) {
             final path = widget.coordinator.paths[index];
             final isActive = path == widget.coordinator.activePath;
+            final isReadOnly = path is ReadOnlyNavigationPath;
 
             return Container(
               decoration: const BoxDecoration(
@@ -287,7 +295,7 @@ class _DebugOverlayState<T extends RouteUnique>
                     child: Row(
                       children: [
                         Icon(
-                          Icons.folder_open,
+                          isReadOnly ? Icons.lock : Icons.folder_open,
                           color: isActive
                               ? const Color(0xFFEDEDED)
                               : const Color(0xFF666666),
@@ -328,10 +336,32 @@ class _DebugOverlayState<T extends RouteUnique>
                                   ),
                                 ),
                               ],
+                              if (isReadOnly) ...[
+                                Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withAlpha(100),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'STATEFUL',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
-                        if (path.stack.isNotEmpty)
+                        // Only show pop button for non-read-only paths
+                        if (path.stack.isNotEmpty && !isReadOnly)
                           _SmallIconButton(
                             icon: Icons.arrow_back,
                             tooltip: 'Pop Route',
@@ -369,72 +399,155 @@ class _DebugOverlayState<T extends RouteUnique>
                     ),
                   ),
                   if (path.stack.isNotEmpty)
-                    ...path.stack.reversed.indexed.map((data) {
-                      final (index, route) = data;
-                      final isTop = index == 0;
-                      final isRouteActive = isActive && isTop;
+                    // For read-only paths, show all routes as selectable items
+                    if (isReadOnly)
+                      ...path.stack.indexed.map((data) {
+                        final (routeIndex, route) = data;
+                        final readOnlyPath = path;
+                        final isRouteActive =
+                            isActive &&
+                            routeIndex == readOnlyPath.activePathIndex;
 
-                      return Container(
-                        padding: const EdgeInsets.only(
-                          left: 34,
-                          right: 8,
-                          top: 6,
-                          bottom: 6,
-                        ),
-                        color: isTop ? const Color(0xFF111111) : null,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      route.toString(),
-                                      style: TextStyle(
-                                        color: isTop
-                                            ? const Color(0xFFEDEDED)
-                                            : const Color(0xFF999999),
-                                        fontSize: 11,
-                                        fontFamily: 'monospace',
-                                        fontWeight: isTop
-                                            ? FontWeight.w600
-                                            : FontWeight.normal,
+                        return InkWell(
+                          onTap: () async {
+                            try {
+                              await readOnlyPath.pushIndexed(routeIndex);
+                              _showToast(
+                                'Navigated to $route',
+                                type: ToastType.push,
+                              );
+                            } catch (e) {
+                              _showToast('Error: $e', type: ToastType.error);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.only(
+                              left: 34,
+                              right: 8,
+                              top: 6,
+                              bottom: 6,
+                            ),
+                            color: isRouteActive
+                                ? const Color(0xFF111111)
+                                : null,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          route.toString(),
+                                          style: TextStyle(
+                                            color: isRouteActive
+                                                ? const Color(0xFFEDEDED)
+                                                : const Color(0xFF999999),
+                                            fontSize: 11,
+                                            fontFamily: 'monospace',
+                                            fontWeight: isRouteActive
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                      if (isRouteActive) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.blue,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                  if (isRouteActive) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.blue,
-                                        shape: BoxShape.circle,
+                                ),
+                                // Show check icon instead of close for read-only
+                                Icon(
+                                  isRouteActive
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_unchecked,
+                                  size: 16,
+                                  color: isRouteActive
+                                      ? Colors.blue
+                                      : const Color(0xFF666666),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      })
+                    // For normal paths, show routes with delete functionality
+                    else
+                      ...path.stack.reversed.indexed.map((data) {
+                        final (index, route) = data;
+                        final isTop = index == 0;
+                        final isRouteActive = isActive && isTop;
+
+                        return Container(
+                          padding: const EdgeInsets.only(
+                            left: 34,
+                            right: 8,
+                            top: 6,
+                            bottom: 6,
+                          ),
+                          color: isTop ? const Color(0xFF111111) : null,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        route.toString(),
+                                        style: TextStyle(
+                                          color: isTop
+                                              ? const Color(0xFFEDEDED)
+                                              : const Color(0xFF999999),
+                                          fontSize: 11,
+                                          fontFamily: 'monospace',
+                                          fontWeight: isTop
+                                              ? FontWeight.w600
+                                              : FontWeight.normal,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
+                                    if (isRouteActive) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.blue,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-                            _SmallIconButton(
-                              icon: Icons.close,
-                              tooltip: 'Remove Route',
-                              onTap: path.stack.length > 1
-                                  ? () {
-                                      path.remove(route);
-                                      _showToast(
-                                        'Removed $route',
-                                        type: ToastType.remove,
-                                      );
-                                    }
-                                  : null,
-                              color: Colors.red[200],
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
+                              _SmallIconButton(
+                                icon: Icons.close,
+                                tooltip: 'Remove Route',
+                                onTap: path.stack.length > 1
+                                    ? () {
+                                        path.remove(route);
+                                        _showToast(
+                                          'Removed $route',
+                                          type: ToastType.remove,
+                                        );
+                                      }
+                                    : null,
+                                color: Colors.red[200],
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                 ],
               ),
             );

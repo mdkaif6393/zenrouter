@@ -62,7 +62,9 @@ mixin RouteRedirect<T extends RouteTarget> on RouteTarget {
   ///
   /// Return `this` to navigate to this route, or return a different route
   /// to redirect. Can be synchronous or asynchronous.
-  FutureOr<T> redirect();
+  ///
+  /// Return `null` if you want to manipulate navigation stack manually.
+  FutureOr<T?> redirect();
 }
 
 /// Strategy for handling deep links.
@@ -210,7 +212,7 @@ abstract mixin class RouteTarget extends Object {
 /// print('Form returned: $result');
 /// ```
 class NavigationPath<T extends RouteTarget> extends ChangeNotifier {
-  NavigationPath() : _stack = [];
+  NavigationPath([List<T>? stack]) : _stack = stack ?? [];
 
   /// The internal mutable stack.
   final List<T> _stack;
@@ -238,6 +240,8 @@ class NavigationPath<T extends RouteTarget> extends ChangeNotifier {
     T target = element;
     while (target is RouteRedirect<T>) {
       final newTarget = await (target as RouteRedirect<T>).redirect();
+      // If redirect returns null, do nothing
+      if (newTarget == null) return;
       if (newTarget == target) break;
       target = newTarget;
     }
@@ -258,6 +262,8 @@ class NavigationPath<T extends RouteTarget> extends ChangeNotifier {
     T target = element;
     while (target is RouteRedirect<T>) {
       final newTarget = await (target as RouteRedirect<T>).redirect();
+      // If redirect returns null, do nothing
+      if (newTarget == null) return;
       if (newTarget == target) break;
       target = newTarget;
     }

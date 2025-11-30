@@ -3,6 +3,110 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'core.dart';
 
+/// A navigation path with a pre-defined, fixed set of routes.
+///
+/// Unlike [NavigationPath], which allows dynamic addition/removal of routes,
+/// [ReadOnlyNavigationPath] maintains a fixed stack of routes and only allows
+/// navigation between them via indexed selection.
+///
+/// **Key Characteristics:**
+/// - Routes are defined at initialization and cannot be added or removed
+/// - Navigation is done by selecting routes by index using [pushIndexed]
+/// - Tracks an [activePathIndex] to maintain the current route
+/// - Useful for tab bars, wizards, or any navigation where routes are predetermined
+///
+/// **Why "Stateful"?**
+/// This pattern is often used with stateful shells where each route maintains
+/// its own state while users navigate between them (e.g., tabs that preserve
+/// scroll position).
+///
+/// **Restricted Operations:**
+/// - [pop]: Throws error (no back navigation supported)
+/// - [remove]: Throws error (can't remove routes from fixed stack)
+/// - [clear]: Ignored (maintains all routes)
+/// - [push]: Only works for routes already in the stack
+///
+/// Example:
+/// ```dart
+/// // Define a tab navigation with 3 fixed routes
+/// final tabPath = ReadOnlyNavigationPath<TabRoute>([
+///   HomeTab(),
+///   SearchTab(),
+///   ProfileTab(),
+/// ]);
+///
+/// // Navigate to a specific tab by index
+/// await tabPath.pushIndexed(1); // Navigate to SearchTab
+///
+/// // Or push a route directly (must be in the original stack)
+/// await tabPath.push(ProfileTab()); // Navigate to ProfileTab
+/// ```
+class ReadOnlyNavigationPath<T extends RouteUnique> extends NavigationPath<T> {
+  ReadOnlyNavigationPath(List<T> super.stack)
+    : assert(stack.isNotEmpty, 'Read-only path must have at least one route');
+
+  int _activePathIndex = 0;
+  int get activePathIndex => _activePathIndex;
+
+  T get activeRoute => stack[activePathIndex];
+
+  Future<void> pushIndexed(int index) async {
+    if (index >= stack.length) throw StateError('Index out of bounds');
+    final oldIndex = _activePathIndex;
+    final oldRoute = stack[oldIndex];
+    if (oldRoute is RouteGuard) {
+      final canPop = await (oldRoute as RouteGuard).popGuard();
+      if (!canPop) return;
+    }
+    var newRoute = stack[index];
+    while (newRoute is RouteRedirect<T>) {
+      final redirectTo = await (newRoute as RouteRedirect<T>).redirect();
+      if (redirectTo == null) return;
+      newRoute = redirectTo;
+    }
+
+    push(newRoute);
+    notifyListeners();
+  }
+
+  @override
+  Future<dynamic> push(T element) async {
+    final index = stack.indexOf(element);
+    if (index == -1) {
+      throw StateError('You can not push a new route into read-only path');
+    }
+    _activePathIndex = index;
+    notifyListeners();
+    return null;
+  }
+
+  @override
+  Future<void> pushOrMoveToTop(T element) async {
+    return push(element);
+  }
+
+  @override
+  void clear() {
+    // Ignore clear
+  }
+
+  @override
+  Future<void> pop([Object? result]) =>
+      throw StateError('You can not pop from read-only path');
+
+  @override
+  void replace(List<T> stack) {
+    if (stack.length != 1) {
+      throw StateError('You can not replace in read-only path');
+    }
+    push(stack[0]);
+  }
+
+  @override
+  void remove(T element) =>
+      throw StateError('You can not remove from read-only path');
+}
+
 /// Makes a route identifiable and usable with [Coordinator].
 ///
 /// **Required for all routes** used with the Coordinator pattern.
@@ -90,6 +194,121 @@ mixin RouteShellHost<T extends RouteUnique> on RouteShell<T> {
   /// This is different from [getPath] - it's where the shell host itself lives,
   /// not where its children live.
   NavigationPath getHostPath(covariant Coordinator coordinator);
+}
+
+/// Marks a route as part of a stateful shell navigation.
+///
+/// Similar to [RouteShell], but designed for shells that use [ReadOnlyNavigationPath]
+/// to maintain state across pre-defined routes. This is ideal for:
+/// - Tab bars where each tab preserves its state
+/// - Wizards with fixed steps
+/// - Carousels or paged navigation with pre-defined items
+///
+/// Every stateful shell route must specify its [shellHost], which is the container
+/// that provides the UI framework and manages the [ReadOnlyNavigationPath].
+///
+/// **Difference from RouteShell:**
+/// - [RouteShell]: Dynamic navigation with routes added/removed as needed
+/// - [RouteShellStateful]: Fixed set of routes with indexed navigation
+///
+/// Example:
+/// ```dart
+/// sealed class FeedTab extends AppRoute with RouteShellStateful<FeedTab> {
+///   @override
+///   FeedTab get shellHost => FeedTabHost();
+/// }
+///
+/// class ForYouFeed extends FeedTab { ... }
+/// class FollowingFeed extends FeedTab { ... }
+/// ```
+mixin RouteShellStateful<T extends RouteUnique> on RouteUnique {
+  /// The host route that provides the stateful shell container.
+  T get shellHost;
+}
+
+/// Marks a route as the host/container for a stateful shell's navigation.
+///
+/// Use [RouteShellStatefulHost] to create the container that manages a
+/// [ReadOnlyNavigationPath] with pre-defined routes. This is typically used for:
+/// - Tab bars with state preservation
+/// - Page views with indexed navigation
+/// - Wizards or stepped forms
+///
+/// The host is responsible for:
+/// - Providing the UI framework (TabBar, PageView, etc.)
+/// - Creating and managing a [ReadOnlyNavigationPath] with fixed routes
+/// - Implementing [builder] to construct the shell UI
+/// - Defining which parent path it belongs to ([getHostPath])
+///
+/// **Implementation Pattern:**
+/// 1. Define the host path (usually a [ReadOnlyNavigationPath])
+/// 2. Implement [builder] to create the shell UI
+/// 3. Implement [resolver] to convert routes to widgets (or use default)
+///
+/// Example:
+/// ```dart
+/// class FeedTabHost extends AppRoute
+///     with RouteShellStatefulHost<FeedTab>, RouteBuilder {
+///   @override
+///   FeedTab get shellHost => this;
+///
+///   @override
+///   NavigationPath getHostPath(coordinator) => coordinator.home;
+///
+///   @override
+///   Widget build(coordinator, context) {
+///     // Create ReadOnlyNavigationPath with fixed tabs
+///     final tabPath = ReadOnlyNavigationPath<FeedTab>([
+///       ForYouFeed(),
+///       FollowingFeed(),
+///     ]);
+///
+///     return Scaffold(
+///       body: PageView.builder(
+///         onPageChanged: (index) => tabPath.pushIndexed(index),
+///         itemCount: tabPath.stack.length,
+///         itemBuilder: (context, index) {
+///           final route = tabPath.stack[index];
+///           return resolver(coordinator, context, route);
+///         },
+///       ),
+///     );
+///   }
+/// }
+/// ```
+mixin RouteShellStatefulHost<T extends RouteUnique> on RouteUnique {
+  /// Returns the navigation path that hosts this stateful shell.
+  ///
+  /// This is where the shell host itself lives (typically the root path),
+  /// not where its children (the ReadOnlyNavigationPath) live.
+  NavigationPath getHostPath(covariant Coordinator coordinator);
+
+  /// Builds the stateful shell UI.
+  ///
+  /// This is where you create the [ReadOnlyNavigationPath] and construct
+  /// the shell's visual structure (TabBar, PageView, etc.).
+  Widget builder(covariant Coordinator coordinator);
+
+  /// Resolves child routes to their widget representation.
+  ///
+  /// By default, handles [RouteBuilder] routes. Override for custom logic.
+  ///
+  /// Note: The host itself should throw when resolved (it's a container,
+  /// not a renderable route).
+  Widget resolver(
+    covariant Coordinator coordinator,
+    BuildContext context,
+    T route,
+  ) {
+    return switch (route) {
+      /// Host route should not be resolved
+      RouteShellStatefulHost<T>() => throw UnimplementedError(),
+
+      /// Route should be resolved
+      RouteBuilder() => (route as RouteBuilder).build(coordinator, context),
+      _ => throw UnimplementedError(),
+    };
+  }
 }
 
 /// Provides custom deep link handling logic.
@@ -248,11 +467,19 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   /// Override to customize path routing logic.
   NavigationPath pathResolver(T route) => switch (route) {
     RouteShellHost() => (route as RouteShellHost).getHostPath(this),
+    RouteShellStatefulHost() => (route as RouteShellStatefulHost).getHostPath(
+      this,
+    ),
     _ => route.getPath(this),
   };
 
   /// Returns the current URI based on the active route.
-  Uri get currentUri => activePath.stack.lastOrNull?.toUri() ?? Uri.parse('/');
+  Uri get currentUri {
+    if (activePath case ReadOnlyNavigationPath activePath) {
+      return activePath.activeRoute.toUri() ?? Uri.parse('/');
+    }
+    return activePath.stack.lastOrNull?.toUri() ?? Uri.parse('/');
+  }
 
   /// Parses a [Uri] into a route object.
   ///
@@ -293,18 +520,34 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   ///
   /// Clears the target path and pushes the new route.
   /// For shell routes, ensures the shell host is also in place.
-  void replace(T route) {
-    final path = pathResolver(route);
-    T? hostRoute = route;
+  void replace(T route) async {
+    // Handle RouteRedirect logic first
+    T target = route;
+    while (target is RouteRedirect) {
+      final newTarget = await (target as RouteRedirect).redirect();
+      // If redirect returns null, do nothing
+      if (newTarget == null) return;
+      if (newTarget == target) break;
+      if (newTarget is T) target = newTarget;
+    }
+
+    final path = pathResolver(target);
+    T? hostRoute = target;
     while (hostRoute != null) {
       if (hostRoute is RouteShell<T> && hostRoute is! RouteShellHost) {
         hostRoute = (hostRoute as RouteShell<T>).shellHost;
+        CoordinatorUtils(pathResolver(hostRoute)).setRoute(hostRoute);
+      }
+      /// TODO: This should carefully handle stateful hosts check logic here
+      else if (hostRoute is RouteShellStateful<T> &&
+          hostRoute is! RouteShellStatefulHost) {
+        hostRoute = (hostRoute as RouteShellStateful<T>).shellHost;
         CoordinatorUtils(pathResolver(hostRoute)).setRoute(hostRoute);
       } else {
         hostRoute = null;
       }
     }
-    CoordinatorUtils(path).setRoute(route);
+    CoordinatorUtils(path).setRoute(target);
   }
 
   /// Pushes a new route onto its navigation path.
@@ -317,6 +560,12 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
       if (hostRoute is RouteShell<T> && hostRoute is! RouteShellHost) {
         hostRoute = (hostRoute as RouteShell<T>).shellHost;
         pathResolver(hostRoute).pushOrMoveToTop(hostRoute);
+      }
+      /// TODO: This should carefully handle stateful hosts check logic here
+      else if (hostRoute is RouteShellStateful<T> &&
+          hostRoute is! RouteShellStatefulHost) {
+        hostRoute = (hostRoute as RouteShellStateful<T>).shellHost;
+        CoordinatorUtils(pathResolver(hostRoute)).setRoute(hostRoute);
       } else {
         hostRoute = null;
       }
@@ -388,9 +637,8 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   }
 
   /// The route information parser for MaterialApp.router.
-  late final CoordinatorRouteParser parser = CoordinatorRouteParser(
-    coordinator: this,
-  );
+  late final CoordinatorRouteParser routeInformationParser =
+      CoordinatorRouteParser(coordinator: this);
 
   /// The router delegate for MaterialApp.router.
   late final CoordinatorRouterDelegate routerDelegate =

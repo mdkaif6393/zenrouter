@@ -79,7 +79,7 @@ void main() {
   group('CoordinatorRouteParser', () {
     test('parseRouteInformation converts RouteInformation to Uri', () async {
       final coordinator = TestCoordinator();
-      final parser = coordinator.parser;
+      final parser = coordinator.routeInformationParser;
 
       final routeInfo = RouteInformation(uri: Uri.parse('/page'));
       final result = await parser.parseRouteInformation(routeInfo);
@@ -89,7 +89,7 @@ void main() {
 
     test('restoreRouteInformation converts Uri to RouteInformation', () {
       final coordinator = TestCoordinator();
-      final parser = coordinator.parser;
+      final parser = coordinator.routeInformationParser;
 
       final uri = Uri.parse('/page');
       final result = parser.restoreRouteInformation(uri);
@@ -106,7 +106,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp.router(
           routerDelegate: coordinator.routerDelegate,
-          routeInformationParser: coordinator.parser,
+          routeInformationParser: coordinator.routeInformationParser,
         ),
       );
 
@@ -119,7 +119,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp.router(
           routerDelegate: coordinator.routerDelegate,
-          routeInformationParser: coordinator.parser,
+          routeInformationParser: coordinator.routeInformationParser,
         ),
       );
       await tester.pumpAndSettle();
@@ -136,7 +136,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp.router(
           routerDelegate: coordinator.routerDelegate,
-          routeInformationParser: coordinator.parser,
+          routeInformationParser: coordinator.routeInformationParser,
         ),
       );
       unawaited(coordinator.push(PageTestRoute()));
@@ -152,7 +152,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp.router(
           routerDelegate: coordinator.routerDelegate,
-          routeInformationParser: coordinator.parser,
+          routeInformationParser: coordinator.routeInformationParser,
         ),
       );
       unawaited(coordinator.push(PageTestRoute()));
