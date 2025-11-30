@@ -36,6 +36,9 @@ void main() {
 
 class AppCoordinator extends Coordinator<AppRoute>
     with CoordinatorDebug<AppRoute> {
+  @override
+  bool get debugEnabled => true;
+
   // Primary navigation path (for main screens)
   // root is inherited from Coordinator
 

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:zenrouter/zenrouter.dart';
 import 'package:zentoast/zentoast.dart';
@@ -9,6 +10,9 @@ import 'package:zentoast/zentoast.dart';
 /// - Ability to push routes by URI
 /// - Ability to push pre-defined debug routes
 mixin CoordinatorDebug<T extends RouteUnique> on Coordinator<T> {
+  /// Toggle debug overlay visibility.
+  bool get debugEnabled => true;
+
   /// Override this to provide a list of routes that can be quickly pushed
   /// from the debug overlay.
   List<T> get debugRoutes => [];
@@ -37,22 +41,49 @@ mixin CoordinatorDebug<T extends RouteUnique> on Coordinator<T> {
 
   @override
   Widget rootBuilder(BuildContext context) {
+    if (!debugEnabled) return super.rootBuilder(context);
+
     return ToastProvider.create(
       child: Stack(
         children: [
-          super.rootBuilder(context),
-          ToastThemeProvider(
-            data: ToastTheme(
-              viewerPadding: EdgeInsets.only(top: 16, right: 16),
-              gap: 8,
-            ),
-            child: ToastViewer(
-              delay: Duration(seconds: 3),
-              width: 420,
-              alignment: Alignment.topRight,
+          Builder(builder: (context) => super.rootBuilder(context)),
+          SafeArea(
+            child: ToastThemeProvider(
+              data: ToastTheme(
+                viewerPadding: EdgeInsets.only(top: 16, left: 16, right: 16),
+                gap: 8,
+              ),
+              child: ToastViewer(
+                delay: Duration(seconds: 3),
+                width: 420,
+                alignment: Alignment.topRight,
+              ),
             ),
           ),
-          _DebugOverlay(coordinator: this),
+          Overlay(
+            initialEntries: [
+              OverlayEntry(
+                builder: (context) => MediaQuery.fromView(
+                  view: View.of(context),
+                  child: Builder(
+                    builder: (context) {
+                      final viewInsets = MediaQuery.viewInsetsOf(context);
+                      final viewPadding = MediaQuery.viewPaddingOf(context);
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: switch (viewInsets.bottom) {
+                            > 0 => viewInsets.bottom,
+                            _ => viewPadding.bottom,
+                          },
+                        ),
+                        child: _DebugOverlay(coordinator: this),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -82,9 +113,8 @@ class _DebugOverlayState<T extends RouteUnique>
   @override
   Widget build(BuildContext context) {
     if (!widget.coordinator._debugOverlayOpen) {
-      return Positioned(
-        bottom: 16,
-        right: 16,
+      return Align(
+        alignment: Alignment.bottomRight,
         child: Badge(
           isLabelVisible: widget.coordinator.problems > 0,
           label: Text('${widget.coordinator.problems}'),
@@ -107,14 +137,18 @@ class _DebugOverlayState<T extends RouteUnique>
         final width = isMobile ? constraints.maxWidth : 420.0;
         final height = isMobile ? 400.0 : 500.0;
         final bottom = isMobile ? 0.0 : 16.0;
-        final right = isMobile ? 0.0 : 16.0;
+        final horizontal = isMobile ? 0.0 : 16.0;
 
         return Align(
           alignment: Alignment.bottomRight,
           child: Container(
             height: height,
             width: width,
-            padding: EdgeInsets.only(bottom: bottom, right: right),
+            padding: EdgeInsets.only(
+              bottom: bottom,
+              right: horizontal,
+              left: horizontal,
+            ),
             child: Material(
               color: Colors.transparent,
               child: Container(
@@ -592,12 +626,20 @@ class _DebugOverlayState<T extends RouteUnique>
 
   void _showToast(String message, {ToastType type = ToastType.info}) {
     final (icon, color, title) = switch (type) {
-      ToastType.push => (Icons.arrow_forward, Colors.blue, 'Push Route'),
-      ToastType.replace => (Icons.swap_horiz, Colors.orange, 'Replace Route'),
-      ToastType.pop => (Icons.arrow_back, Colors.purple, 'Pop Route'),
-      ToastType.remove => (Icons.delete_outline, Colors.red, 'Remove Route'),
-      ToastType.error => (Icons.error_outline, Colors.red, 'Error'),
-      ToastType.info => (Icons.info_outline, Colors.grey, 'Info'),
+      ToastType.push => (CupertinoIcons.arrow_right, Colors.blue, 'Push Route'),
+      ToastType.replace => (
+        CupertinoIcons.arrow_2_squarepath,
+        Colors.orange,
+        'Replace Route',
+      ),
+      ToastType.pop => (CupertinoIcons.arrow_left, Colors.purple, 'Pop Route'),
+      ToastType.remove => (CupertinoIcons.trash, Colors.red, 'Remove Route'),
+      ToastType.error => (
+        CupertinoIcons.exclamationmark_circle,
+        Colors.red,
+        'Error',
+      ),
+      ToastType.info => (CupertinoIcons.info_circle, Colors.grey, 'Info'),
     };
 
     Toast(
