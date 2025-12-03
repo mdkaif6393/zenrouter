@@ -76,6 +76,7 @@ mixin RouteLayout<T extends RouteUnique> on RouteUnique {
 
   @override
   void onDidPop(Object? result, covariant Coordinator? coordinator) {
+    super.onDidPop(result, coordinator);
     if (coordinator == null) return;
     resolvePath(coordinator).reset();
   }
@@ -108,6 +109,7 @@ abstract class RouteTarget extends Object {
   StackPath? _path;
 
   Object? _resultValue;
+  bool isPopByPath = false;
 
   @override
   int get hashCode =>
@@ -182,4 +184,17 @@ mixin RouteUnique on RouteTarget {
   Widget build(covariant Coordinator coordinator, BuildContext context);
 
   Uri toUri();
+
+  @override
+  @mustCallSuper
+  void onDidPop(
+    Object? result,
+    covariant Coordinator<RouteUnique>? coordinator,
+  ) {
+    if (_path case NavigationPath path) {
+      if (this is! RouteGuard && !isPopByPath) {
+        path.remove(this);
+      }
+    }
+  }
 }

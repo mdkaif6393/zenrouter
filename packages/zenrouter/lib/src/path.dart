@@ -12,6 +12,7 @@ part 'transition.dart';
 mixin StackMutatable<T extends RouteTarget> on StackPath<T> {
   Future<dynamic> push(T element) async {
     T target = await RouteRedirect.resolve(element);
+    target.isPopByPath = false;
     target._path = this;
     _stack.add(target);
     notifyListeners();
@@ -27,6 +28,7 @@ mixin StackMutatable<T extends RouteTarget> on StackPath<T> {
   /// without duplicating it in the stack.
   Future<void> pushOrMoveToTop(T element) async {
     T target = await RouteRedirect.resolve(element);
+    target.isPopByPath = false;
     target._path = this;
     final index = _stack.indexOf(target);
     if (index != -1) _stack.removeAt(index);
@@ -39,7 +41,9 @@ mixin StackMutatable<T extends RouteTarget> on StackPath<T> {
   /// Returns `true` if the pop was successful, `false` if the guard cancelled it,
   /// or `null` if the stack was empty.
   Future<bool?> pop([Object? result]) async {
-    if (_stack.isEmpty) return null;
+    if (_stack.isEmpty) {
+      return null;
+    }
     final last = _stack.last;
     if (last is RouteGuard) {
       final canPop = await last.popGuard();
@@ -47,6 +51,7 @@ mixin StackMutatable<T extends RouteTarget> on StackPath<T> {
     }
 
     final element = _stack.removeLast();
+    element.isPopByPath = true;
     element._resultValue = result;
     notifyListeners();
     return true;
