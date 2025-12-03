@@ -27,7 +27,7 @@ mixin CoordinatorDebug<T extends RouteUnique> on Coordinator<T> {
   }).length;
 
   /// Override this to provide a custom label for a navigation path.
-  String debugLabel(NavigationPath path) => path.toString();
+  String debugLabel(StackPath path) => path.toString();
 
   bool _debugOverlayOpen = false;
 
@@ -312,7 +312,7 @@ class _DebugOverlayState<T extends RouteUnique>
           itemBuilder: (context, index) {
             final path = widget.coordinator.paths[index];
             final isActive = path == widget.coordinator.activeHostPaths.last;
-            final isReadOnly = path is FixedNavigationPath;
+            final isReadOnly = path is IndexedStackPath;
 
             return Container(
               decoration: const BoxDecoration(
@@ -400,8 +400,7 @@ class _DebugOverlayState<T extends RouteUnique>
                           ),
                         ),
                         // Only show pop button for non-read-only paths
-                        if (path.stack.isNotEmpty &&
-                            path is DynamicNavigationPath)
+                        if (path.stack.isNotEmpty && path is NavigationPath)
                           _SmallIconButton(
                             icon: Icons.arrow_back,
                             tooltip: 'Pop Route',
@@ -570,7 +569,7 @@ class _DebugOverlayState<T extends RouteUnique>
                                   ],
                                 ),
                               ),
-                              if (path is DynamicNavigationPath)
+                              if (path is NavigationPath)
                                 _SmallIconButton(
                                   icon: Icons.close,
                                   tooltip: 'Remove Route',

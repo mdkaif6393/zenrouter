@@ -7,7 +7,7 @@ part of '../../coordinator.dart';
 /// Convention: Named files represent subdirectories or specific routes
 class SettingsAccountRoute extends AppRoute {
   @override
-  RouteLayout? get layout => SettingsLayout.instance;
+  Type get layout => SettingsLayout;
 
   @override
   Uri toUri() => Uri.parse('/settings/account');

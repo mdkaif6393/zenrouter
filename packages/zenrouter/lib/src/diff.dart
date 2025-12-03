@@ -221,7 +221,7 @@ List<DiffOp<T>> _backtrack<T>(
 /// - Inserts alone are processed by building a new stack
 /// - Keeps are no-ops
 void applyDiff<T extends RouteTarget>(
-  DynamicNavigationPath<T> path,
+  NavigationPath<T> path,
   List<DiffOp<T>> operations,
 ) {
   // Early exit if no operations

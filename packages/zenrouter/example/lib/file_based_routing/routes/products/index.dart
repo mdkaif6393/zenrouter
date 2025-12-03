@@ -7,7 +7,7 @@ part of '../../coordinator.dart';
 /// Convention: index.dart represents the default route for the directory
 class ProductsIndexRoute extends AppRoute {
   @override
-  RouteLayout? get layout => ProductsLayout.instance;
+  Type get layout => ProductsLayout;
 
   @override
   Uri toUri() => Uri.parse('/products');

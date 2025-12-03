@@ -9,77 +9,9 @@ part 'mixin.dart';
 part 'stack.dart';
 part 'transition.dart';
 
-/// A stack-based container for managing navigation history.
-sealed class NavigationPath<T extends RouteTarget> extends ChangeNotifier {
-  NavigationPath._(this._stack, {this.debugLabel});
-
-  static DynamicNavigationPath<T> dynamic<T extends RouteTarget>([
-    String? debugLabel,
-    List<T>? stack,
-  ]) => DynamicNavigationPath<T>(debugLabel, stack);
-
-  static FixedNavigationPath<T> fixed<T extends RouteTarget>(
-    List<T> stack, [
-    String? debugLabel,
-  ]) => FixedNavigationPath<T>(stack, debugLabel);
-
-  /// A label for debugging purposes.
-  final String? debugLabel;
-
-  /// The internal mutable stack.
-  final List<T> _stack;
-
-  /// The current navigation stack as an unmodifiable list.
-  ///
-  /// The first element is the bottom of the stack (first route),
-  /// and the last element is the top of the stack (current route).
-  List<T> get stack => List.unmodifiable(_stack);
-
-  /// Reset all routes from the navigation stack.
-  ///
-  /// This force clears the entire navigation history. Guards are NOT consulted.
-  @mustCallSuper
-  void reset() {
-    for (final element in _stack) {
-      element._path = null;
-    }
-  }
-
-  @override
-  String toString() =>
-      '${debugLabel ?? hashCode} [${switch (this) {
-        FixedNavigationPath<T>() => 'Fixed',
-        DynamicNavigationPath<T>() => 'Dynamic',
-      }}]';
-}
-
-/// Dynamic navigation path
-class DynamicNavigationPath<T extends RouteTarget> extends NavigationPath<T> {
-  DynamicNavigationPath([String? debugLabel, List<T>? stack])
-    : super._(stack ?? [], debugLabel: debugLabel);
-
-  /// Pushes a route onto the navigation stack.
-  ///
-  /// If the route has [RouteRedirect], the redirect chain is followed until
-  /// a non-redirecting route is reached. That route is then pushed.
-  ///
-  /// Returns a [Future] that completes when the route is popped, with the
-  /// pop result value (if any).
-  ///
-  /// Example:
-  /// ```dart
-  /// final result = await path.push(EditRoute());
-  /// print('User saved: $result');
-  /// ```
+mixin StackMutatable<T extends RouteTarget> on StackPath<T> {
   Future<dynamic> push(T element) async {
-    T target = element;
-    while (target is RouteRedirect<T>) {
-      final newTarget = await (target as RouteRedirect<T>).redirect();
-      // If redirect returns null, do nothing
-      if (newTarget == null) return;
-      if (newTarget == target) break;
-      target = newTarget;
-    }
+    T target = await RouteRedirect.resolve(element);
     target._path = this;
     _stack.add(target);
     notifyListeners();
@@ -94,63 +26,79 @@ class DynamicNavigationPath<T extends RouteTarget> extends NavigationPath<T> {
   /// Useful for tab navigation where you want to switch to a tab
   /// without duplicating it in the stack.
   Future<void> pushOrMoveToTop(T element) async {
-    T target = element;
-    while (target is RouteRedirect<T>) {
-      final newTarget = await (target as RouteRedirect<T>).redirect();
-      // If redirect returns null, do nothing
-      if (newTarget == null) return;
-      if (newTarget == target) break;
-      target = newTarget;
-    }
+    T target = await RouteRedirect.resolve(element);
     target._path = this;
     final index = _stack.indexOf(target);
-    if (index != -1) {
-      _stack.removeAt(index);
-    }
+    if (index != -1) _stack.removeAt(index);
     _stack.add(target);
     notifyListeners();
   }
 
   /// Removes the top route from the navigation stack.
   ///
-  /// If the route has [RouteGuard], the guard is consulted first.
-  /// The pop is cancelled if the guard returns `false`.
-  ///
-  /// The optional [result] is passed back to the Future returned by [push].
-  ///
-  /// Example:
-  /// ```dart
-  /// path.pop({'saved': true});
-  /// ```
-  Future<void> pop([Object? result]) async {
-    if (_stack.isEmpty) return;
+  /// Returns `true` if the pop was successful, `false` if the guard cancelled it,
+  /// or `null` if the stack was empty.
+  Future<bool?> pop([Object? result]) async {
+    if (_stack.isEmpty) return null;
     final last = _stack.last;
     if (last is RouteGuard) {
       final canPop = await last.popGuard();
-      if (!canPop) return;
+      if (!canPop) return false;
     }
 
     final element = _stack.removeLast();
     element._resultValue = result;
     notifyListeners();
+    return true;
   }
+}
 
-  /// Replaces the entire navigation stack with a new set of routes.
+/// A stack-based container for managing navigation history.
+abstract class StackPath<T extends RouteTarget> extends ChangeNotifier {
+  StackPath._(this._stack, {this.debugLabel});
+
+  static NavigationPath<T> navigationStack<T extends RouteTarget>([
+    String? debugLabel,
+    List<T>? stack,
+  ]) => NavigationPath<T>(debugLabel, stack);
+
+  static IndexedStackPath<T> indexedStack<T extends RouteTarget>(
+    List<T> stack, [
+    String? debugLabel,
+  ]) => IndexedStackPath<T>(stack, debugLabel);
+
+  /// A label for debugging purposes.
+  final String? debugLabel;
+
+  /// The internal mutable stack.
+  final List<T> _stack;
+
+  T? get activeRoute;
+
+  /// The current navigation stack as an unmodifiable list.
   ///
-  /// Pops all existing routes (respecting guards), then pushes all new routes.
-  /// Useful for resetting the navigation state.
+  /// The first element is the bottom of the stack (first route),
+  /// and the last element is the top of the stack (current route).
+  List<T> get stack => List.unmodifiable(_stack);
+
+  /// Reset all routes from the navigation stack.
   ///
-  /// Example:
-  /// ```dart
-  /// path.replace([HomeRoute(), ProfileRoute()]);
-  /// ```
-  void replace(List<T> stack) {
-    while (_stack.isNotEmpty) {
-      pop();
-    }
-    stack.forEach(push);
-    notifyListeners();
-  }
+  /// This force clears the entire navigation history. Guards are NOT consulted.
+  @mustCallSuper
+  void reset();
+
+  Future<void> activateRoute(T route);
+
+  @override
+  String toString() =>
+      '${debugLabel ?? hashCode} [${runtimeType.toString().replaceAll('Path', '')}]';
+}
+
+/// Stack path for navigation path
+class NavigationPath<T extends RouteTarget> extends StackPath<T>
+    with StackMutatable<T> {
+  NavigationPath([String? debugLabel, List<T>? stack])
+    : super._(stack ?? [], debugLabel: debugLabel);
 
   /// Removes a specific route from the stack (at any position).
   ///
@@ -163,26 +111,37 @@ class DynamicNavigationPath<T extends RouteTarget> extends NavigationPath<T> {
 
   @override
   void reset() {
-    super.reset();
+    for (final route in _stack) {
+      route.completeOnResult(null, null, true);
+    }
     _stack.clear();
-    notifyListeners();
+  }
+
+  @override
+  T? get activeRoute => _stack.lastOrNull;
+
+  @override
+  Future<void> activateRoute(T route) async {
+    reset();
+    push(route);
   }
 }
 
 /// Fixed navigation path
-class FixedNavigationPath<T extends RouteTarget> extends NavigationPath<T> {
-  FixedNavigationPath(super.stack, [String? debugLabel])
+class IndexedStackPath<T extends RouteTarget> extends StackPath<T> {
+  IndexedStackPath(super.stack, [String? debugLabel])
     : assert(stack.isNotEmpty, 'Read-only path must have at least one route'),
       super._(debugLabel: debugLabel) {
     for (final path in stack) {
       /// Set the output of every route to null since this cannot pop
-      path._completeOnResult(null, null);
+      path.completeOnResult(null, null);
     }
   }
 
   int _activePathIndex = 0;
   int get activePathIndex => _activePathIndex;
 
+  @override
   T get activeRoute => stack[activePathIndex];
 
   Future<void> goToIndexed(int index) async {
@@ -204,16 +163,17 @@ class FixedNavigationPath<T extends RouteTarget> extends NavigationPath<T> {
     notifyListeners();
   }
 
+  @override
   Future<void> activateRoute(T route) async {
     final index = stack.indexOf(route);
+    route.completeOnResult(null, null, true);
     if (index == -1) throw StateError('Route not found');
     await goToIndexed(index);
   }
 
   @override
   void reset() {
-    super.reset();
-    notifyListeners();
+    _activePathIndex = 0;
   }
 }
 

@@ -5,22 +5,15 @@ part of '../../coordinator.dart';
 /// File: routes/settings/+layout.dart
 /// Convention: +layout.dart files define RouteLayout for their directory
 class SettingsLayout extends AppRoute with RouteLayout {
-  SettingsLayout._();
-  static final instance = SettingsLayout._();
-
   @override
-  DynamicNavigationPath resolvePath(covariant Coordinator coordinator) {
-    final appCoordinator = coordinator as AppCoordinator;
-    return appCoordinator.settingsStack;
-  }
+  NavigationPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
+      coordinator.settingsStack;
 
   @override
   Uri toUri() => Uri.parse('/settings');
 
   @override
-  Widget build(covariant Coordinator coordinator, BuildContext context) {
-    final appCoordinator = coordinator as AppCoordinator;
-
+  Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -29,9 +22,10 @@ class SettingsLayout extends AppRoute with RouteLayout {
           onPressed: () => coordinator.pop(),
         ),
       ),
-      body: RouteLayout.defaultBuildForDynamicPath(
+      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
         coordinator,
-        appCoordinator.settingsStack,
+        coordinator.settingsStack,
+        this,
       ),
     );
   }

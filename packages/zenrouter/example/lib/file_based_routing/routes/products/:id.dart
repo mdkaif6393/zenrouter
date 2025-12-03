@@ -11,7 +11,7 @@ class ProductDetailRoute extends AppRoute {
   ProductDetailRoute({required this.id});
 
   @override
-  RouteLayout? get layout => ProductsLayout.instance;
+  Type get layout => ProductsLayout;
 
   @override
   Uri toUri() => Uri.parse('/products/$id');

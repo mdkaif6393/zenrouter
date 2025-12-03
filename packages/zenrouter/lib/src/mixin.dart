@@ -18,56 +18,60 @@ mixin RouteGuard on RouteTarget {
   FutureOr<bool> popGuard();
 }
 
+typedef RouteLayoutBuilder<T extends RouteUnique> =
+    Widget Function(
+      Coordinator coordinator,
+      StackPath<T> path,
+      RouteLayout<T>? layout,
+    );
+typedef RouteLayoutConstructor<T extends RouteUnique> =
+    RouteLayout<T> Function();
+
 mixin RouteLayout<T extends RouteUnique> on RouteUnique {
-  static Widget defaultBuildForFixedPath<T extends RouteUnique>(
-    Coordinator coordinator,
-    FixedNavigationPath<T> path,
-  ) => ListenableBuilder(
-    listenable: path,
-    builder: (context, _) => IndexedStack(
-      index: path.activePathIndex,
-      children: path.stack
-          .map(
-            (route) => Builder(
-              builder: (context) => route.build(coordinator, context),
-            ),
-          )
-          .toList(),
+  static const navigationPath = 'NavigationPath';
+  static const indexedStackPath = 'IndexedStackPath';
+  static Map<Type, RouteLayoutConstructor> layoutConstructorTable = {};
+  static Map<String, RouteLayoutBuilder> layoutBuilderTable = {
+    navigationPath: (coordinator, path, layout) => NavigationStack(
+      path: path as NavigationPath<RouteUnique>,
+      navigatorKey: layout == null
+          ? coordinator.routerDelegate.navigatorKey
+          : null,
+      coordinator: coordinator,
+      resolver: (route) => switch (route) {
+        RouteTransition() => route.transition(coordinator),
+        _ => StackTransition.material(
+          Builder(builder: (context) => route.build(coordinator, context)),
+        ),
+      },
     ),
-  );
+    indexedStackPath: (coordinator, path, layout) => ListenableBuilder(
+      listenable: path,
+      builder: (context, child) {
+        final indexedStackPath = path as IndexedStackPath<RouteUnique>;
+        return IndexedStack(
+          index: indexedStackPath.activePathIndex,
+          children: indexedStackPath.stack
+              .map((ele) => ele.build(coordinator, context))
+              .toList(),
+        );
+      },
+    ),
+  };
 
-  static Widget defaultBuildForDynamicPath<T extends RouteUnique>(
-    Coordinator coordinator,
-    DynamicNavigationPath<T> path, [
-    GlobalKey<NavigatorState>? navigationKey,
-  ]) => NavigationStack(
-    navigatorKey: navigationKey,
-    path: path,
-    coordinator: coordinator,
-    resolver: (route) => switch (route) {
-      RouteTransition() => (route as RouteTransition).transition(coordinator),
-      _ => StackTransition.material(
-        Builder(builder: (context) => route.build(coordinator, context)),
-      ),
-    },
-  );
-
-  NavigationPath resolvePath(covariant Coordinator coordinator);
+  StackPath<RouteUnique> resolvePath(covariant Coordinator coordinator);
 
   @override
   Widget build(covariant Coordinator coordinator, BuildContext context) {
     final path = resolvePath(coordinator);
-    return switch (path) {
-      DynamicNavigationPath() => defaultBuildForDynamicPath(
-        coordinator,
-        path as DynamicNavigationPath<T>,
-        layout == null ? coordinator.routerDelegate.navigatorKey : null,
-      ),
-      FixedNavigationPath() => defaultBuildForFixedPath(
-        coordinator,
-        path as FixedNavigationPath<T>,
-      ),
-    };
+    final pureType = path.runtimeType.toString().split('<').first;
+    final builder = RouteLayout.layoutBuilderTable[pureType];
+    if (builder == null) {
+      throw UnimplementedError(
+        'If you define new kind of path layout you must register it at [RouteLayout.layoutTable]',
+      );
+    }
+    return builder(coordinator, path, this);
   }
 
   @override
@@ -75,6 +79,11 @@ mixin RouteLayout<T extends RouteUnique> on RouteUnique {
     if (coordinator == null) return;
     resolvePath(coordinator).reset();
   }
+
+  static void defineLayout<T extends RouteLayout>(
+    Type homeHost,
+    T Function() constructor,
+  ) => RouteLayout.layoutConstructorTable[homeHost] = constructor;
 }
 
 mixin RouteRedirect<T extends RouteTarget> on RouteTarget {
@@ -96,7 +105,7 @@ mixin RouteRedirect<T extends RouteTarget> on RouteTarget {
 abstract class RouteTarget extends Object {
   final Completer<dynamic> _onResult = Completer();
 
-  NavigationPath? _path;
+  StackPath? _path;
 
   Object? _resultValue;
 
@@ -123,7 +132,16 @@ abstract class RouteTarget extends Object {
   @override
   String toString() => '$runtimeType';
 
-  void _completeOnResult(Object? result, covariant Coordinator? coordinator) {
+  void completeOnResult(
+    Object? result,
+    covariant Coordinator? coordinator, [
+    bool failSilent = false,
+  ]) {
+    if (failSilent && _onResult.isCompleted) {
+      _resultValue = null;
+      _path = null;
+      return;
+    }
     _onResult.complete(result);
     _resultValue = result;
     _path = null;
@@ -139,7 +157,27 @@ mixin RouteTransition on RouteUnique {
 }
 
 mixin RouteUnique on RouteTarget {
-  RouteLayout? get layout => null;
+  Type? get layout => null;
+  RouteLayout? createLayout(covariant Coordinator coordinator) {
+    final constructor = RouteLayout.layoutConstructorTable[layout];
+    if (constructor == null) {
+      throw UnimplementedError(
+        'Layout constructor for [$layout] must define in [RouteLayout.layoutConstructorTable] in [defineLayout] function at your [Coordinator]',
+      );
+    }
+    return constructor();
+  }
+
+  RouteLayout? resolveLayout(covariant Coordinator coordinator) {
+    if (layout == null) return null;
+    final layouts = coordinator.activeLayouts;
+    if (layouts.isEmpty && layout == null) return null;
+    for (var i = layouts.length - 1; i >= 0; i -= 1) {
+      final l = layouts[i];
+      if (l.runtimeType == layout) return l;
+    }
+    return createLayout(coordinator);
+  }
 
   Widget build(covariant Coordinator coordinator, BuildContext context);
 

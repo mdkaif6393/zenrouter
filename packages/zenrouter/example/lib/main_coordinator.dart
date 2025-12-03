@@ -39,11 +39,9 @@ class MyApp extends StatelessWidget {
 abstract class AppRoute extends RouteTarget with RouteUnique {}
 
 /// Home host - uses NavigatorStack for nested navigation within home
-class HomeHost extends AppRoute with RouteLayout<AppRoute>, RouteTransition {
-  static final instance = HomeHost();
-
+class HomeLayout extends AppRoute with RouteLayout<AppRoute>, RouteTransition {
   @override
-  DynamicNavigationPath resolvePath(AppCoordinator coordinator) =>
+  NavigationPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
       coordinator.homeStack;
 
   @override
@@ -53,9 +51,10 @@ class HomeHost extends AppRoute with RouteLayout<AppRoute>, RouteTransition {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home'), backgroundColor: Colors.blue),
-      body: RouteLayout.defaultBuildForDynamicPath(
+      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
         coordinator,
         coordinator.homeStack,
+        this,
       ),
     );
   }
@@ -70,14 +69,12 @@ class HomeHost extends AppRoute with RouteLayout<AppRoute>, RouteTransition {
 }
 
 /// Tab bar shell - uses Custom (IndexedStack) for tab navigation
-class TabBarHost extends AppRoute with RouteLayout<AppRoute> {
-  static final instance = TabBarHost();
+class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
+  @override
+  Type get layout => HomeLayout;
 
   @override
-  RouteLayout? get layout => HomeHost.instance;
-
-  @override
-  FixedNavigationPath resolvePath(AppCoordinator coordinator) =>
+  IndexedStackPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
       coordinator.tabIndexed;
 
   @override
@@ -91,7 +88,12 @@ class TabBarHost extends AppRoute with RouteLayout<AppRoute> {
         children: [
           // Tab content (IndexedStack is built by RouteHost)
           Expanded(
-            child: RouteLayout.defaultBuildForFixedPath(coordinator, path),
+            child:
+                RouteLayout.layoutBuilderTable[RouteLayout.indexedStackPath]!(
+                  coordinator,
+                  path,
+                  this,
+                ),
           ),
           // Tab bar
           Container(
@@ -102,7 +104,7 @@ class TabBarHost extends AppRoute with RouteLayout<AppRoute> {
                 _TabButton(
                   label: 'Feed',
                   isActive: path.activePathIndex == 0,
-                  onTap: () => coordinator.push(FeedTabHost()),
+                  onTap: () => coordinator.push(FeedTabLayout()),
                 ),
                 _TabButton(
                   label: 'Profile',
@@ -124,9 +126,9 @@ class TabBarHost extends AppRoute with RouteLayout<AppRoute> {
 }
 
 /// Settings shell - uses NavigatorStack for nested settings navigation
-class SettingsHost extends AppRoute with RouteLayout<AppRoute> {
+class SettingsLayout extends AppRoute with RouteLayout<AppRoute> {
   @override
-  DynamicNavigationPath resolvePath(AppCoordinator coordinator) =>
+  NavigationPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
       coordinator.settingsStack;
 
   @override
@@ -135,10 +137,14 @@ class SettingsHost extends AppRoute with RouteLayout<AppRoute> {
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: RouteLayout.defaultBuildForDynamicPath(
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => coordinator.tryPop()),
+        title: const Text('Settings'),
+      ),
+      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
         coordinator,
         coordinator.settingsStack,
+        this,
       ),
     );
   }
@@ -146,7 +152,7 @@ class SettingsHost extends AppRoute with RouteLayout<AppRoute> {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is SettingsHost;
+    return other is SettingsLayout;
   }
 
   @override
@@ -157,23 +163,21 @@ class SettingsHost extends AppRoute with RouteLayout<AppRoute> {
 // Tab Routes (belong to TabBarHost - custom host)
 // ============================================================================
 
-class FeedTabHost extends AppRoute with RouteLayout<AppRoute> {
-  static final instance = FeedTabHost();
-
+class FeedTabLayout extends AppRoute with RouteLayout<AppRoute> {
   @override
   Uri toUri() => Uri.parse('/home/tabs/feed');
 
   @override
-  DynamicNavigationPath resolvePath(AppCoordinator coordinator) =>
+  NavigationPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
       coordinator.feedTabStack;
 
   @override
-  RouteLayout? get layout => TabBarHost.instance;
+  Type get layout => TabBarLayout;
 }
 
 class FeedTab extends AppRoute {
   @override
-  RouteLayout? get layout => FeedTabHost.instance;
+  Type get layout => FeedTabLayout;
 
   @override
   Uri toUri() => Uri.parse('/home/tabs/feed');
@@ -211,7 +215,7 @@ class FeedTab extends AppRoute {
 
 class ProfileTab extends AppRoute {
   @override
-  RouteLayout? get layout => TabBarHost.instance;
+  Type get layout => TabBarLayout;
 
   @override
   Uri toUri() => Uri.parse('/home/tabs/profile');
@@ -237,7 +241,7 @@ class ProfileTab extends AppRoute {
 
 class SettingsTab extends AppRoute {
   @override
-  RouteLayout? get layout => TabBarHost.instance;
+  Type get layout => TabBarLayout;
 
   @override
   Uri toUri() => Uri.parse('/home/tabs/settings');
@@ -256,8 +260,9 @@ class SettingsTab extends AppRoute {
           onPressed: () => coordinator.push(GeneralSettings()),
           child: const Text('Go to Full Settings'),
         ),
+        const SizedBox(height: 8),
         ElevatedButton(
-          onPressed: () => coordinator.replace(Login()),
+          onPressed: () => coordinator.push(Login()),
           child: const Text('Go to Login'),
         ),
       ],
@@ -276,7 +281,7 @@ class FeedDetail extends AppRoute
   final String id;
 
   @override
-  RouteLayout? get layout => FeedTabHost.instance;
+  Type get layout => FeedTabLayout;
 
   @override
   Uri toUri() => Uri.parse('/home/feed/$id');
@@ -357,7 +362,7 @@ class FeedDetail extends AppRoute
 
 class ProfileDetail extends AppRoute {
   @override
-  RouteLayout? get layout => HomeHost.instance;
+  Type get layout => HomeLayout;
 
   @override
   Uri toUri() => Uri.parse('/home/profile/detail');
@@ -391,10 +396,8 @@ class ProfileDetail extends AppRoute {
 // ============================================================================
 
 class GeneralSettings extends AppRoute {
-  final _settingsHost = SettingsHost();
-
   @override
-  RouteLayout? get layout => _settingsHost;
+  Type get layout => SettingsLayout;
 
   @override
   Uri toUri() => Uri.parse('/settings/general');
@@ -423,10 +426,8 @@ class GeneralSettings extends AppRoute {
 }
 
 class AccountSettings extends AppRoute {
-  final _settingsHost = SettingsHost();
-
   @override
-  RouteLayout? get layout => _settingsHost;
+  Type get layout => SettingsLayout;
 
   @override
   Uri toUri() => Uri.parse('/settings/account');
@@ -450,10 +451,8 @@ class AccountSettings extends AppRoute {
 }
 
 class PrivacySettings extends AppRoute {
-  final _settingsHost = SettingsHost();
-
   @override
-  RouteLayout? get layout => _settingsHost;
+  Type get layout => SettingsLayout;
 
   @override
   Uri toUri() => Uri.parse('/settings/privacy');
@@ -501,7 +500,7 @@ class NotFound extends AppRoute {
             Text('Route not found: ${uri.path}'),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => coordinator.replace(HomeHost.instance),
+              onPressed: () => coordinator.replace(HomeLayout()),
               child: const Text('Go Home'),
             ),
           ],
@@ -517,24 +516,26 @@ class NotFound extends AppRoute {
 
 class AppCoordinator extends Coordinator<AppRoute> with CoordinatorDebug {
   // Navigation paths for different shells
-  final DynamicNavigationPath<AppRoute> homeStack = DynamicNavigationPath(
-    'home',
-  );
-  final DynamicNavigationPath<AppRoute> settingsStack = DynamicNavigationPath(
-    'settings',
-  );
-  final FixedNavigationPath<AppRoute> tabIndexed = FixedNavigationPath([
-    FeedTabHost.instance,
+  final NavigationPath<AppRoute> homeStack = NavigationPath('home');
+  final NavigationPath<AppRoute> settingsStack = NavigationPath('settings');
+  final IndexedStackPath<AppRoute> tabIndexed = IndexedStackPath([
+    FeedTabLayout(),
     ProfileTab(),
     SettingsTab(),
   ], 'home-tabs');
 
-  DynamicNavigationPath<AppRoute> feedTabStack = DynamicNavigationPath(
-    'feed-nested',
-  );
+  NavigationPath<AppRoute> feedTabStack = NavigationPath('feed-nested');
 
   @override
-  List<NavigationPath> get paths => [
+  void defineLayout() {
+    RouteLayout.defineLayout(HomeLayout, HomeLayout.new);
+    RouteLayout.defineLayout(SettingsLayout, SettingsLayout.new);
+    RouteLayout.defineLayout(TabBarLayout, TabBarLayout.new);
+    RouteLayout.defineLayout(FeedTabLayout, FeedTabLayout.new);
+  }
+
+  @override
+  List<StackPath> get paths => [
     root,
     homeStack,
     settingsStack,
@@ -544,7 +545,8 @@ class AppCoordinator extends Coordinator<AppRoute> with CoordinatorDebug {
 
   @override
   List<AppRoute> get debugRoutes => [
-    FeedTabHost(),
+    Login(),
+    FeedTabLayout(),
     ProfileTab(),
     SettingsTab(),
     FeedDetail(id: '1'),
@@ -590,7 +592,10 @@ class Login extends AppRoute {
     BuildContext context,
   ) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => coordinator.tryPop()),
+        title: const Text('Login'),
+      ),
       body: Center(
         child: TextButton(
           onPressed: () => coordinator.replace(FeedTab()),

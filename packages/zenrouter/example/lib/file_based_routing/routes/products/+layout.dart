@@ -5,22 +5,15 @@ part of '../../coordinator.dart';
 /// File: routes/products/+layout.dart
 /// Convention: +layout.dart files define RouteLayout for their directory
 class ProductsLayout extends AppRoute with RouteLayout {
-  ProductsLayout._();
-  static final instance = ProductsLayout._();
-
   @override
-  DynamicNavigationPath resolvePath(covariant Coordinator coordinator) {
-    final appCoordinator = coordinator as AppCoordinator;
-    return appCoordinator.productsStack;
-  }
+  NavigationPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
+      coordinator.productsStack;
 
   @override
   Uri toUri() => Uri.parse('/products');
 
   @override
-  Widget build(covariant Coordinator coordinator, BuildContext context) {
-    final appCoordinator = coordinator as AppCoordinator;
-
+  Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Products'),
@@ -29,9 +22,10 @@ class ProductsLayout extends AppRoute with RouteLayout {
           onPressed: () => coordinator.pop(),
         ),
       ),
-      body: RouteLayout.defaultBuildForDynamicPath(
+      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
         coordinator,
-        appCoordinator.productsStack,
+        resolvePath(coordinator),
+        this,
       ),
     );
   }

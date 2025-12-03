@@ -8,6 +8,7 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
     for (final path in paths) {
       path.addListener(notifyListeners);
     }
+    defineLayout();
   }
 
   @override
@@ -21,27 +22,62 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   /// The root (primary) navigation path.
   ///
   /// All coordinators have at least this one path.
-  final DynamicNavigationPath<T> root = DynamicNavigationPath('root');
+  final NavigationPath<T> root = NavigationPath('root');
 
   /// All navigation paths managed by this coordinator.
   ///
   /// If you add custom paths, make sure to override [paths]
-  List<NavigationPath> get paths => [root];
+  List<StackPath> get paths => [root];
+
+  void defineLayout() {}
 
   /// Returns the current URI based on the active route.
-  Uri get currentUri {
-    final activePath = nearestPath;
-    switch (activePath) {
-      case DynamicNavigationPath<T>():
-        return activePath.stack.lastOrNull?.toUri() ?? Uri.parse('/');
-      case FixedNavigationPath<T>():
-        return activePath.activeRoute.toUri();
+  Uri get currentUri => activePath.activeRoute?.toUri() ?? Uri.parse('/');
+
+  /// Returns the deepest active [RouteLayout] in the navigation hierarchy.
+  ///
+  /// This traverses through nested layouts to find the most deeply nested
+  /// layout that is currently active. Returns `null` that mean root is active layout.
+  RouteLayout? get activeLayout {
+    T? current = root.activeRoute;
+    if (current == null || current is! RouteLayout) return null;
+
+    RouteLayout? deepestLayout = current;
+
+    // Traverse through nested layouts to find the deepest one
+    while (current is RouteLayout) {
+      deepestLayout = current;
+      final path = current.resolvePath(this);
+      current = path.activeRoute as T?;
+
+      // If the next route is not a layout, we've found the deepest layout
+      if (current is! RouteLayout) break;
     }
+
+    return deepestLayout;
   }
 
-  List<NavigationPath> get activeHostPaths {
-    List<NavigationPath> pathSegment = [root];
-    NavigationPath path = root;
+  /// Returns all active [RouteLayout] instances in the navigation hierarchy.
+  ///
+  /// This traverses through the active route to collect all layouts from root
+  /// to the deepest layout. Returns an empty list if no layouts are active.
+  List<RouteLayout> get activeLayouts {
+    List<RouteLayout> layouts = [];
+    T? current = root.activeRoute;
+
+    // Traverse through the hierarchy and collect all RouteLayout instances
+    while (current != null && current is RouteLayout) {
+      layouts.add(current);
+      final path = current.resolvePath(this);
+      current = path.activeRoute as T?;
+    }
+
+    return layouts;
+  }
+
+  List<StackPath> get activeHostPaths {
+    List<StackPath> pathSegment = [root];
+    StackPath path = root;
     T? current = root.stack.lastOrNull;
     if (current == null) return pathSegment;
 
@@ -49,29 +85,14 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
       final host = current as RouteLayout;
       path = host.resolvePath(this);
       pathSegment.add(path);
-      switch (path) {
-        case DynamicNavigationPath():
-          current = path.stack.lastOrNull as T?;
-        case FixedNavigationPath():
-          current = path.activeRoute as T;
-      }
+      current = path.activeRoute as T?;
     }
 
     return pathSegment;
   }
 
-  DynamicNavigationPath get nearestDynamicPath {
-    final segments = activeHostPaths;
-    for (var index = segments.length - 1; index >= 0; --index) {
-      final path = segments[index];
-      if (path is DynamicNavigationPath) return path;
-    }
-
-    return root;
-  }
-
-  NavigationPath<T> get nearestPath =>
-      (activeHostPaths.lastOrNull ?? root) as NavigationPath<T>;
+  StackPath<T> get activePath =>
+      (activeHostPaths.lastOrNull ?? root) as StackPath<T>;
 
   /// Parses a [Uri] into a route object.
   ///
@@ -109,32 +130,23 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
     }
   }
 
-  void _resolveHostPaths(
-    T route, {
-    required void Function(DynamicNavigationPath<T> path, T host)
-    onDynamicPathResolved,
-  }) {
-    RouteLayout? layout = route.layout;
+  void _resolveLayouts(RouteLayout? layout, {bool preferPush = false}) {
     List<RouteLayout> layouts = [];
-    List<NavigationPath> layoutPaths = [];
+    List<StackPath> layoutPaths = [];
     while (layout != null) {
       layouts.add(layout);
       layoutPaths.add(layout.resolvePath(this));
-      layout = layout.layout;
+      layout = layout.resolveLayout(this);
     }
     layoutPaths.add(root);
 
     for (var i = layoutPaths.length - 1; i >= 1; i--) {
       final hostOfHostPath = layoutPaths[i];
       final host = layouts[i - 1];
-      switch (hostOfHostPath) {
-        case FixedNavigationPath():
-          hostOfHostPath.activateRoute(host);
-        case DynamicNavigationPath():
-          onDynamicPathResolved(
-            hostOfHostPath as DynamicNavigationPath<T>,
-            host as T,
-          );
+      if (hostOfHostPath is StackMutatable && preferPush) {
+        hostOfHostPath.pushOrMoveToTop(host);
+      } else {
+        hostOfHostPath.activateRoute(host);
       }
     }
   }
@@ -144,21 +156,12 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
     for (final path in paths) {
       path.reset();
     }
-
     T target = await RouteRedirect.resolve(route);
-    _resolveHostPaths(
-      target,
-      onDynamicPathResolved: (path, host) =>
-          CoordinatorUtils(path).setRoute(host),
-    );
-    final path = target.layout?.resolvePath(this) ?? root;
+    final layout = target.resolveLayout(this);
+    final path = layout?.resolvePath(this) ?? root;
+    _resolveLayouts(layout, preferPush: false);
 
-    switch (path) {
-      case DynamicNavigationPath():
-        CoordinatorUtils(path).setRoute(target);
-      case FixedNavigationPath():
-        path.activateRoute(target);
-    }
+    path.activateRoute(target);
   }
 
   /// Pushes a new route onto its navigation path.
@@ -166,16 +169,14 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   /// For shell routes, ensures the shell host exists in the parent path first.
   Future<dynamic> push(T route) async {
     T target = await RouteRedirect.resolve(route);
-    _resolveHostPaths(
-      target,
-      onDynamicPathResolved: (path, host) => path.pushOrMoveToTop(host),
-    );
-    final path = target.layout?.resolvePath(this) ?? root;
+    final layout = target.resolveLayout(this);
+    final path = layout?.resolvePath(this) ?? root;
+    _resolveLayouts(layout, preferPush: true);
 
     switch (path) {
-      case DynamicNavigationPath():
+      case StackMutatable():
         return path.push(target);
-      case FixedNavigationPath():
+      default:
         path.activateRoute(target);
         return null;
     }
@@ -186,15 +187,14 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   /// Useful for tab navigation where you don't want duplicates.
   void pushOrMoveToTop(T route) async {
     final target = await RouteRedirect.resolve(route);
-    _resolveHostPaths(
-      target,
-      onDynamicPathResolved: (path, host) => path.pushOrMoveToTop(host),
-    );
-    final path = target.layout?.resolvePath(this) ?? root;
+    final layout = target.resolveLayout(this);
+    final path = layout?.resolvePath(this) ?? root;
+    _resolveLayouts(layout, preferPush: true);
+
     switch (path) {
-      case DynamicNavigationPath():
+      case StackMutatable():
         path.pushOrMoveToTop(target);
-      case FixedNavigationPath():
+      default:
         path.activateRoute(target);
     }
   }
@@ -202,9 +202,7 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   /// Pops the last route from the nearest dynamic path.
   void pop() {
     // Get all dynamic paths from the active host paths
-    final dynamicPaths = activeHostPaths
-        .whereType<DynamicNavigationPath>()
-        .toList();
+    final dynamicPaths = activeHostPaths.whereType<NavigationPath>().toList();
 
     // Try to pop from the farthest element if stack length >= 2
     for (var i = dynamicPaths.length - 1; i >= 0; i--) {
@@ -220,10 +218,10 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   ///
   /// Override to customize the root navigation structure.
   Widget layoutBuilder(BuildContext context) =>
-      RouteLayout.defaultBuildForDynamicPath(
+      RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
         this,
         root,
-        routerDelegate.navigatorKey,
+        null,
       );
 
   /// Attempts to pop the nearest dynamic path.
@@ -235,9 +233,7 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   /// - `null` if the [RouteGuard] want manual control
   Future<bool?> tryPop() async {
     // Get all dynamic paths from the active host paths
-    final dynamicPaths = activeHostPaths
-        .whereType<DynamicNavigationPath>()
-        .toList();
+    final dynamicPaths = activeHostPaths.whereType<NavigationPath>().toList();
 
     // Try to pop from the farthest element if stack length >= 2
     for (var i = dynamicPaths.length - 1; i >= 0; i--) {
@@ -267,17 +263,6 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
 
   /// Access to the navigator state.
   NavigatorState get navigator => routerDelegate.navigatorKey.currentState!;
-}
-
-/// Extension type that provides utility methods for [DynamicNavigationPath].
-extension type CoordinatorUtils<T extends RouteTarget>(
-  DynamicNavigationPath<T> path
-) {
-  /// Clears the path and sets a single route.
-  void setRoute(T route) {
-    path.reset();
-    path.push(route);
-  }
 }
 
 // ==============================================================================

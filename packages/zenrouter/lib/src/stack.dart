@@ -31,7 +31,7 @@ class NavigationStack<T extends RouteTarget> extends StatefulWidget {
   final Coordinator? coordinator;
 
   /// The navigation path to render.
-  final DynamicNavigationPath<T> path;
+  final NavigationPath<T> path;
 
   /// Callback that converts routes to destinations.
   final StackTransitionResolver<T> resolver;
@@ -73,10 +73,10 @@ class _NavigationStackState<T extends RouteTarget>
                 switch (didPop) {
                   case true when result != null:
                     route.onDidPop(result, widget.coordinator);
-                    route._completeOnResult(result, widget.coordinator);
+                    route.completeOnResult(result, widget.coordinator);
                   case true:
                     route.onDidPop(result, widget.coordinator);
-                    route._completeOnResult(
+                    route.completeOnResult(
                       route._resultValue,
                       widget.coordinator,
                     );
@@ -125,7 +125,7 @@ class DeclarativeNavigationStack<T extends RouteTarget> extends StatefulWidget {
 
 class _DeclarativeNavigationStackState<T extends RouteTarget>
     extends State<DeclarativeNavigationStack<T>> {
-  late final path = DynamicNavigationPath<T>(widget.debugLabel);
+  late final path = NavigationPath<T>(widget.debugLabel);
   List<T> _previousRoutes = [];
 
   @override

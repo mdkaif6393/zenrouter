@@ -29,6 +29,7 @@
 /// ```bash
 /// flutter run -t lib/file_based_routing/main.dart
 /// ```
+library;
 
 import 'package:flutter/material.dart';
 import 'coordinator.dart';

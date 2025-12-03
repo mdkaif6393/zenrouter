@@ -7,7 +7,7 @@ part of '../../coordinator.dart';
 /// Convention: index.dart represents the default route for the directory
 class SettingsIndexRoute extends AppRoute {
   @override
-  RouteLayout? get layout => SettingsLayout.instance;
+  Type get layout => SettingsLayout;
 
   @override
   Uri toUri() => Uri.parse('/settings');

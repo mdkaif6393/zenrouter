@@ -23,17 +23,18 @@ abstract class AppRoute extends RouteTarget with RouteUnique {}
 /// translates to URL parsing and navigation.
 class AppCoordinator extends Coordinator<AppRoute> with CoordinatorDebug {
   // Navigation paths for each directory
-  final homeStack = DynamicNavigationPath<AppRoute>('home');
-  final productsStack = DynamicNavigationPath<AppRoute>('products');
-  final settingsStack = DynamicNavigationPath<AppRoute>('settings');
+  final homeStack = NavigationPath<AppRoute>('home');
+  final productsStack = NavigationPath<AppRoute>('products');
+  final settingsStack = NavigationPath<AppRoute>('settings');
 
   @override
-  List<NavigationPath> get paths => [
-    root,
-    homeStack,
-    productsStack,
-    settingsStack,
-  ];
+  List<StackPath> get paths => [root, homeStack, productsStack, settingsStack];
+
+  @override
+  void defineLayout() {
+    RouteLayout.layoutConstructorTable[ProductsLayout] = ProductsLayout.new;
+    RouteLayout.layoutConstructorTable[SettingsLayout] = SettingsLayout.new;
+  }
 
   @override
   AppRoute parseRouteFromUri(Uri uri) {

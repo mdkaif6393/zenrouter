@@ -846,8 +846,7 @@ class _ReviewItem extends StatelessWidget {
 // NAVIGATION PATH
 // =============================================================================
 
-final onboardingPath = DynamicNavigationPath<OnboardingRoute>()
-  ..push(WelcomeStep());
+final onboardingPath = NavigationPath<OnboardingRoute>()..push(WelcomeStep());
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});

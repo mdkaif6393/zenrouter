@@ -293,7 +293,7 @@ void main() {
 
   group('applyDiff', () {
     test('handles empty operations', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[
+      final path = StackPath.navigationStack('test', <TestRoute>[
         TestRoute('a'),
         TestRoute('b'),
       ]);
@@ -306,7 +306,7 @@ void main() {
     });
 
     test('applies only deletes', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[
+      final path = StackPath.navigationStack('test', <TestRoute>[
         TestRoute('a'),
         TestRoute('b'),
         TestRoute('c'),
@@ -326,7 +326,7 @@ void main() {
     });
 
     test('applies only inserts', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[
+      final path = StackPath.navigationStack('test', <TestRoute>[
         TestRoute('a'),
         TestRoute('c'),
       ]);
@@ -346,7 +346,7 @@ void main() {
     });
 
     test('applies mixed operations', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[
+      final path = StackPath.navigationStack('test', <TestRoute>[
         TestRoute('a'),
         TestRoute('b'),
         TestRoute('c'),
@@ -368,7 +368,7 @@ void main() {
     });
 
     test('applies multiple deletes in reverse order', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[
+      final path = StackPath.navigationStack('test', <TestRoute>[
         TestRoute('a'),
         TestRoute('b'),
         TestRoute('c'),
@@ -390,7 +390,7 @@ void main() {
     });
 
     test('applies multiple inserts', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[
+      final path = StackPath.navigationStack('test', <TestRoute>[
         TestRoute('a'),
         TestRoute('d'),
       ]);
@@ -412,7 +412,7 @@ void main() {
     });
 
     test('handles complete replacement', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[
+      final path = StackPath.navigationStack('test', <TestRoute>[
         TestRoute('a'),
         TestRoute('b'),
       ]);
@@ -434,7 +434,9 @@ void main() {
 
   group('applyDiff - Edge cases', () {
     test('handles delete with out-of-bounds index gracefully', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[TestRoute('a')]);
+      final path = StackPath.navigationStack('test', <TestRoute>[
+        TestRoute('a'),
+      ]);
 
       final ops = [
         const Delete<TestRoute>(5), // Out of bounds
@@ -448,7 +450,9 @@ void main() {
     });
 
     test('handles insert beyond stack length', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[TestRoute('a')]);
+      final path = StackPath.navigationStack('test', <TestRoute>[
+        TestRoute('a'),
+      ]);
 
       final ops = [
         Insert<TestRoute>(TestRoute('b'), 10), // Beyond length
@@ -462,7 +466,7 @@ void main() {
     });
 
     test('preserves Keep operations as no-op', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[
+      final path = StackPath.navigationStack('test', <TestRoute>[
         TestRoute('a'),
         TestRoute('b'),
       ]);
@@ -490,7 +494,7 @@ void main() {
         TestRoute('settings'),
       ];
 
-      final path = NavigationPath.dynamic('test', oldRoutes.toList());
+      final path = StackPath.navigationStack('test', oldRoutes.toList());
 
       final ops = myersDiff<TestRoute>(oldRoutes, newRoutes);
       applyDiff(path, ops);
@@ -516,7 +520,7 @@ void main() {
         TestRoute('z'),
       ];
 
-      final path = NavigationPath.dynamic('test', oldRoutes.toList());
+      final path = StackPath.navigationStack('test', oldRoutes.toList());
 
       final ops = myersDiff<TestRoute>(oldRoutes, newRoutes);
       applyDiff(path, ops);
@@ -530,7 +534,7 @@ void main() {
     });
 
     test('handles empty to populated', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[]);
+      final path = StackPath.navigationStack('test', <TestRoute>[]);
 
       final newRoutes = <TestRoute>[TestRoute('a'), TestRoute('b')];
 
@@ -543,7 +547,7 @@ void main() {
     });
 
     test('handles populated to empty', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[
+      final path = StackPath.navigationStack('test', <TestRoute>[
         TestRoute('a'),
         TestRoute('b'),
       ]);
@@ -555,7 +559,9 @@ void main() {
     });
 
     test('notifications are triggered', () {
-      final path = NavigationPath.dynamic('test', <TestRoute>[TestRoute('a')]);
+      final path = StackPath.navigationStack('test', <TestRoute>[
+        TestRoute('a'),
+      ]);
 
       var notified = false;
       path.addListener(() {
