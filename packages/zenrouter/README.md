@@ -1,99 +1,90 @@
 # ZenRouter 🧘
 
-**Three ways to route. One elegant system.**
+**The Ultimate Flutter Router for Every Navigation Pattern**
 
-ZenRouter unifies Flutter navigation into three clear paradigms - choose the approach that fits your needs, from simple imperative navigation to advanced deep linking.
-
-## Why ZenRouter?
-
-🎯 **Three Paradigms** - Imperative, Declarative, or Coordinator - use what fits your app  
-⚡ **Progressive** - Start simple, add complexity only when needed  
-🔒 **Type-Safe** - Full compile-time route checking  
-🛡️ **Powerful Guards** - Prevent unwanted navigation with async guards  
-🔗 **Deep Linking** - Built-in URI parsing and web navigation (Coordinator)  
-📦 **Minimal Boilerplate** - Clean mixin-based architecture  
-🔄 **Efficient Updates** - Myers diff algorithm for state-driven routing (Declarative)  
-
-## Choose Your Approach
-
-### 🎮 Imperative: You Control the Stack
-
-**Best for:** Mobile-only apps, event-driven navigation, migrating from Navigator 1.0
-
-```dart
-// Define routes
-class HomeRoute extends RouteTarget {}
-class ProfileRoute extends RouteTarget {}
-
-// Create a navigation path
-final path = DynamicNavigationPath<RouteTarget>();
-
-// Navigate imperatively
-await path.push(ProfileRoute());
-path.pop();
-path.replace([HomeRoute()]);
-
-// Render
-NavigationStack(
-  path: path,
-  resolver: (route) => StackTransition.material(
-    route.build(context),
-  ),
-)
-```
-
-✅ Simple and familiar  
-✅ Full control over navigation stack  
-✅ Event-driven (button clicks, gestures)  
-
-[**→ Imperative Guide**](docs/paradigms/imperative.md)
+ZenRouter is the only router you'll ever need - supporting three distinct paradigms to handle any routing scenario. From simple mobile apps to complex web applications with deep linking, ZenRouter adapts to your needs.
 
 ---
 
-### 📊 Declarative: State Drives Navigation
+## Why ZenRouter?
 
-**Best for:** Tab bars, filtered lists, state-driven UIs, React-like patterns
+**One router. Three paradigms. Infinite possibilities.**
+
+✨ **Three Paradigms in One** - Choose imperative, declarative, or coordinator based on your needs  
+🚀 **Start Simple, Scale Seamlessly** - Begin with basics, add complexity as you grow  
+🌐 **Full Web & Deep Linking** - Built-in URL handling and browser navigation  
+⚡ **Blazing Fast** - Efficient Myers diff algorithm for optimal performance  
+🔒 **Type-Safe** - Catch routing errors at compile-time, not runtime  
+🛡️ **Powerful Guards & Redirects** - Protect routes and control navigation flow  
+📦 **Zero Boilerplate** - Clean, mixin-based architecture  
+📝 **No Codegen Needed** - Pure Dart, no build_runner or generated files  
+
+---
+
+## Three Paradigms, Infinite Flexibility
+
+### 🎮 **Imperative** - Direct Control
+*Perfect for mobile apps and event-driven navigation*
+
+```dart
+final path = NavigationPath<AppRoute>();
+
+// Push routes
+path.push(ProfileRoute());
+
+// Pop back
+path.pop();
+
+// That's it!
+```
+
+**When to use:**
+- Mobile-only applications
+- Button clicks and gesture-driven navigation
+- Migrating from Navigator 1.0
+- You want simple, direct control
+
+[→ Learn Imperative Routing](docs/paradigms/imperative.md)
+
+---
+
+### 📊 **Declarative** - State-Driven
+*Perfect for tab bars, filtered lists, and React-like UIs*
 
 ```dart
 // Your state
 List<int> pages = [1, 2, 3];
-bool showSpecial = false;
 
-// Navigation derives from state
+// Navigation automatically updates when state changes
 NavigationStack.declarative(
   routes: [
     for (final page in pages) PageRoute(page),
-    if (showSpecial) SpecialRoute(),
   ],
   resolver: (route) => StackTransition.material(...),
 )
 
-// Change state = navigation updates automatically
-setState(() => pages.add(4)); // Myers diff adds only new route!
+// Add a page? Navigation updates automatically!
+setState(() => pages.add(4));
 ```
 
-✅ State-driven routing  
-✅ Efficient updates with Myers diff  
-✅ React-like declarative UI  
+**When to use:**
+- Tab navigation
+- Filtered or dynamic lists
+- State-driven UIs
+- React-like declarative patterns
 
-[**→ Declarative Guide**](docs/paradigms/declarative.md)
+[→ Learn Declarative Routing](docs/paradigms/declarative.md)
 
 ---
 
-### 🗺️ Coordinator: Centralized with Deep Links
-
-**Best for:** Web apps, deep linking, large apps, complex nested navigation
+### 🗺️ **Coordinator** - Deep Linking & Web
+*Perfect for web apps and complex navigation hierarchies*
 
 ```dart
-// Define routes with RouteUnique
-class HomeRoute extends RouteTarget with RouteUnique {
+// Define routes with URIs
+class ProfileRoute extends RouteTarget with RouteUnique {
   @override
-  Uri toUri() => Uri.parse('/');
-  
-  @override
-  Widget build(Coordinator coordinator, BuildContext context) {
-    return HomeScreen();
-  }
+  Uri toUri() => Uri.parse('/profile');
 }
 
 // Create coordinator
@@ -108,346 +99,139 @@ class AppCoordinator extends Coordinator<AppRoute> {
   }
 }
 
-// Wire up MaterialApp.router
+// Now you have:
+// ✅ myapp://profile opens ProfileRoute
+// ✅ Website URLs work seamlessly
+// ✅ Browser back button supported
+```
+
+**When to use:**
+- Web applications
+- Deep linking requirements
+- Complex nested navigation
+- URL synchronization needed
+
+[→ Learn Coordinator Pattern](docs/paradigms/coordinator.md)
+
+---
+
+## Quick Comparison
+
+|  | **Imperative** | **Declarative** | **Coordinator** |
+|---|:---:|:---:|:---:|
+| **Simplicity** | ⭐⭐⭐ | ⭐⭐ | ⭐ |
+| **Web Support** | ❌ | ❌ | ✅ |
+| **Deep Linking** | ❌ | ❌ | ✅ |
+| **State-Driven** | Compatible | ✅ Native | Compatible |
+| **Best For** | Mobile apps | Tab bars, lists | Web, large apps |
+
+---
+
+## Getting Started
+
+### Installation
+
+```yaml dependencies:
+  zenrouter: ^0.1.0
+```
+
+```bash
+flutter pub get
+```
+
+### Quick Start - Pick Your Paradigm
+
+#### Simple Mobile App? → Imperative
+
+```dart
+// 1. Create a path
+final path = NavigationPath<RouteTarget>();
+
+// 2. Render it
+NavigationStack(
+  path: path,
+  defaultRoute: HomeRoute(),
+  resolver: (route) => StackTransition.material(
+    route.build(context),
+  ),
+)
+
+// 3. Navigate!
+path.push(ProfileRoute());
+```
+
+#### Tab Bar or List? → Declarative
+
+```dart
+class MyApp extends StatefulWidget {
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  int selectedTab = 0;
+  
+  @override
+  Widget build(BuildContext context) {
+    return NavigationStack.declarative(
+      routes: [
+        HomeRoute(),
+        switch (selectedTab) {
+          0 => FeedRoute(),
+          1 => ProfileRoute(),
+          2 => SettingsRoute(),
+          _ => FeedRoute(),
+        },
+      ],
+      resolver: (route) => StackTransition.material(...),
+    );
+  }
+}
+```
+
+#### Web App? → Coordinator
+
+```dart
+// 1. Define routes with URIs
+class HomeRoute extends RouteTarget with RouteUnique {
+  @override
+  Uri toUri() => Uri.parse('/');
+  
+  @override
+  Widget build(Coordinator coordinator, BuildContext context) {
+    return HomeScreen();
+  }
+}
+
+// 2. Create coordinator
+class AppCoordinator extends Coordinator<AppRoute> {
+  @override
+  AppRoute parseRouteFromUri(Uri uri) {
+    return switch (uri.pathSegments) {
+      [] => HomeRoute(),
+      ['profile'] => ProfileRoute(),
+      _ => NotFoundRoute(),
+    };
+  }
+}
+
+// 3. Use MaterialApp.router
 MaterialApp.router(
   routerDelegate: coordinator.routerDelegate,
   routeInformationParser: coordinator.routeInformationParser,
 )
 ```
 
-✅ Deep linking & web URLs  
-✅ Browser back button  
-✅ Centralized routing  
-✅ Nested navigation  
-
-[**→ Coordinator Guide**](docs/paradigms/coordinator.md)
+[→ Full Getting Started Guide](docs/guides/getting-started.md)
 
 ---
 
-## Quick Comparison
+## Powerful Features
 
-| | Imperative | Declarative | Coordinator |
-|---|---|---|---|
-| **Complexity** | ⭐ Simple | ⭐⭐ Moderate | ⭐⭐⭐ Advanced |
-| **Deep Linking** | ❌ | ❌ | ✅ |
-| **Web Support** | ❌ | ❌ | ✅ |
-| **State-Driven** | Compatible | ✅ Native | Compatible |
-| **Best For** | Mobile apps | Tab bars, lists | Web, large apps |
-
-## Installation
-
-```yaml
-dependencies:
-  zenrouter: ^0.1.0  # Check pub.dev for latest version
-```
-
-## Which Paradigm Should I Use?
-
-```
-Do you need web support or deep linking?
-│
-├─ YES → Use Coordinator
-│        ✓ Deep linking, URL sync, browser back button
-│
-└─ NO → Is your navigation state-driven?
-       │
-       ├─ YES → Use Declarative
-       │        ✓ Efficient state-driven routing with Myers diff
-       │
-       └─ NO → Use Imperative
-                ✓ Simple, direct control
-```
-
-[**→ Full Decision Guide**](docs/guides/getting-started.md)
-
-## Core Concepts
-
-### RouteTarget - Base Class
-
-All routes extend `RouteTarget`:
+### 🛡️ Route Guards - Prevent Unwanted Navigation
 
 ```dart
-class MyRoute extends RouteTarget {
-  final String userId;
-  
-  MyRoute(this.userId);
-  
-  // Important: Implement equality for routes with parameters
-  @override
-  bool operator ==(Object other) {
-    if (!compareWith(other)) return false;
-    return other is MyRoute && other.userId == userId;
-  }
-  
-  @override
-  int get hashCode => Object.hash(super.hashCode, userId);
-}
-```
-
-### NavigationPath - Stack Container
-
-Two types of navigation paths:
-
-**DynamicNavigationPath** - Stack-based (push/pop):
-```dart
-final path = DynamicNavigationPath<RouteTarget>();
-path.push(MyRoute());
-path.pop();
-path.replace([HomeRoute()]);
-```
-
-**FixedNavigationPath** - Indexed (tabs, drawers):
-```dart
-final tabPath = FixedNavigationPath([
-  Tab1Route(),
-  Tab2Route(),
-  Tab3Route(),
-]);
-tabPath.goToIndexed(1); // Switch to Tab2
-```
-
-### Route Mixins - Add Functionality
-
-Mix in behaviors as needed:
-
-```dart
-// Use with Coordinator (required for Coordinator)
-class MyRoute extends RouteTarget with RouteUnique {
-  @override
-  Uri toUri() => Uri.parse('/my-route');
-  
-  @override
-  Widget build(Coordinator coordinator, BuildContext context) {
-    return MyScreen();
-  }
-}
-
-// Prevent navigation with guards
 class FormRoute extends RouteTarget with RouteGuard {
-  bool hasUnsavedChanges = false;
-  
-  @override
-  Future<bool> popGuard() async {
-    if (!hasUnsavedChanges) return true;
-    return await showConfirmDialog(context);
-  }
-}
-
-// Redirect based on conditions
-class ProtectedRoute extends RouteTarget with RouteRedirect<AppRoute> {
-  @override
-  Future<AppRoute> redirect() async {
-    final isAuthenticated = await auth.check();
-    return isAuthenticated ? this : LoginRoute();
-  }
-}
-
-// Custom deep link handling
-class ProductRoute extends RouteTarget with RouteDeepLink {
-  @override
-  DeeplinkStrategy get deeplinkStrategy => DeeplinkStrategy.custom;
-  
-  @override
-  Future<void> deeplinkHandler(Coordinator coordinator, Uri uri) async {
-    // Set up navigation stack, load data, track analytics
-    coordinator.replace(ShopTab());
-    coordinator.push(this);
-    analytics.logDeepLink(uri);
-  }
-}
-
-// Create navigation hosts (tabs, shells)
-class TabHost extends RouteTarget with RouteLayout<AppRoute> {
-  @override
-  FixedNavigationPath resolvePath(Coordinator coordinator) =>
-      coordinator.tabPath;
-  
-  @override
-  Widget build(Coordinator coordinator, BuildContext context) {
-    // Build tab bar UI with NavigationStack
-  }
-}
-```
-
-[**→ Mixin System Guide**](docs/api/mixins.md)
-
-## Mixin Decision Guide
-
-```
-Using Coordinator?
-├─ Yes → Add RouteUnique ✓
-│
-Creating a navigation host (tabs, shells)?
-├─ Yes → Add RouteLayout ✓
-│
-Need custom page transitions?
-├─ Yes → Add RouteTransition ✓
-│
-Prevent navigation (unsaved changes)?
-├─ Yes → Add RouteGuard ✓
-│
-Conditional routing (auth, permissions)?
-├─ Yes → Add RouteRedirect ✓
-│
-Custom deep link handling?
-└─ Yes → Add RouteDeepLink ✓
-```
-
-## Common Patterns
-
-### Multi-Step Form (Imperative)
-
-```dart
-// Pass state through routes
-path.push(Step1(data: FormData()));
-
-// In Step1
-void onNext() {
-  final updated = data.copyWith(name: nameController.text);
-  path.push(Step2(data: updated));
-}
-
-// In Step2
-void onNext() {
-  final updated = data.copyWith(email: emailController.text);
-  path.push(ReviewStep(data: updated));
-}
-```
-
-### Tab Navigation (Declarative or Coordinator)
-
-```dart
-// Declarative
-int selectedTab = 0;
-
-NavigationStack.declarative(
-  routes: [
-    HomeRoute(),
-    switch (selectedTab) {
-      0 => FeedRoute(),
-      1 => ProfileRoute(),
-      2 => SettingsRoute(),
-      _ => FeedRoute(),
-    },
-  ],
-  resolver: resolver,
-)
-
-// Coordinator with FixedNavigationPath
-final tabPath = FixedNavigationPath([
-  FeedRoute(),
-  ProfileRoute(),
-  SettingsRoute(),
-]);
-
-coordinator.push(tabPath.stack[selectedTab]);
-```
-
-### Authentication Flow (Coordinator)
-
-```dart
-class DashboardRoute extends AppRoute with RouteRedirect<AppRoute> {
-  @override
-  Future<AppRoute> redirect() async {
-    final isLoggedIn = await auth.check();
-    return isLoggedIn ? this : LoginRoute();
-  }
-}
-
-// Automatically redirects to login if not authenticated
-coordinator.push(DashboardRoute());
-```
-
-### Nested Navigation (Coordinator)
-
-```dart
-class AppCoordinator extends Coordinator<AppRoute> {
-  // Main navigation
-  final homeStack = DynamicNavigationPath<AppRoute>('home');
-  
-  // Settings navigation (separate stack)
-  final settingsStack = DynamicNavigationPath<AppRoute>('settings');
-  
-  // Tab navigation (indexed)
-  final tabPath = FixedNavigationPath<AppRoute>([
-    FeedTab(),
-    ProfileTab(),
-    SettingsTab(),
-  ]);
-  
-  @override
-  List<NavigationPath> get paths => [root, homeStack, settingsStack, tabPath];
-}
-```
-
-## Best Practices
-
-### ✅ Use Sealed Classes
-
-Enable exhaustive pattern matching:
-
-```dart
-sealed class AppRoute extends RouteTarget with RouteUnique {}
-
-class HomeRoute extends AppRoute { ... }
-class ProfileRoute extends AppRoute { ... }
-
-// Compiler ensures all routes are handled
-AppRoute parseRouteFromUri(Uri uri) {
-  return switch (uri.pathSegments) {
-    [] => HomeRoute(),
-    ['profile'] => ProfileRoute(),
-    // Compiler error if you forget a route!
-  };
-}
-```
-
-### ✅ Implement Equality for Parameterized Routes
-
-Routes with data fields must override `==` and `hashCode`:
-
-```dart
-class UserRoute extends RouteTarget {
-  final String userId;
-  
-  UserRoute(this.userId);
-  
-  @override
-  bool operator ==(Object other) {
-    if (!compareWith(other)) return false; // Check base equality
-    return other is UserRoute && other.userId == userId;
-  }
-  
-  @override
-  int get hashCode => Object.hash(super.hashCode, userId);
-}
-```
-
-Without this, operations like `pushOrMoveToTop`, `remove`, and redirects won't work correctly!
-
-### ✅ Use Immutable State
-
-Routes should carry immutable state:
-
-```dart
-class FormRoute extends RouteTarget {
-  final FormData data;
-  
-  FormRoute({required this.data});
-  
-  void onNext() {
-    final updated = data.copyWith(name: controller.text);
-    path.push(NextRoute(data: updated));
-  }
-}
-```
-
-### ✅ Use Guards for Unsaved Changes
-
-Prevent accidental data loss:
-
-```dart
-class EditorRoute extends RouteTarget with RouteGuard {
   bool hasUnsavedChanges = false;
   
   @override
@@ -458,82 +242,150 @@ class EditorRoute extends RouteTarget with RouteGuard {
 }
 ```
 
+### 🔄 Route Redirects - Authentication & Authorization
+
+```dart
+class DashboardRoute extends RouteTarget with RouteRedirect<AppRoute> {
+  @override
+  Future<AppRoute> redirect() async {
+    final isLoggedIn = await auth.check();
+    return isLoggedIn ? this : LoginRoute();
+  }
+}
+```
+
+### 🎨 Custom Transitions
+
+```dart
+resolver: (route) => switch (route) {
+  HomeRoute() => StackTransition.material(HomeScreen()),
+  ProfileRoute() => StackTransition.cupertino(ProfileScreen()),
+  ModalRoute() => StackTransition.sheet(ModalContent()),
+  DialogRoute() => StackTransition.dialog(DialogContent()),
+  _ => StackTransition.material(NotFoundScreen()),
+}
+```
+
+### 🏗️ Nested Navigation
+
+```dart
+class AppCoordinator extends Coordinator<AppRoute> {
+  final mainNav = NavigationPath('main');
+  final settingsNav = NavigationPath('settings');
+  final tabNav = IndexedStackPath([Tab1(), Tab2(), Tab3()], 'tabs');
+  
+  @override
+  List<StackPath> get paths => [root, mainNav, settingsNav, tabNav];
+}
+```
+
+---
+
+## Choose Your Path
+
+```
+Need web support or deep linking?
+│
+├─ YES → Use Coordinator
+│        ✓ Deep linking & URL sync
+│        ✓ Browser back button
+│        ✓ Perfect for web apps
+│
+└─ NO → Is navigation driven by state?
+       │
+       ├─ YES → Use Declarative
+       │        ✓ Efficient Myers diff
+       │        ✓ React-like patterns
+       │        ✓ Perfect for tab bars
+       │
+       └─ NO → Use Imperative
+                ✓ Simple & direct
+                ✓ Full control
+                ✓ Perfect for mobile
+```
+
+---
+
 ## Documentation
 
-### **📚 Paradigm Guides**
+### **📚 Guides**
+- [Getting Started](docs/guides/getting-started.md) - Choose your paradigm and get started
 - [Imperative Navigation](docs/paradigms/imperative.md) - Direct stack control
 - [Declarative Navigation](docs/paradigms/declarative.md) - State-driven routing
 - [Coordinator Pattern](docs/paradigms/coordinator.md) - Deep linking & web support
 
 ### **🔧 API Reference**
-- [Route Mixins](docs/api/mixins.md) - RouteUnique, RouteGuard, RouteRedirect, etc.
-- [Core Classes](docs/api/core-classes.md) - RouteTarget, StackTransition
-- [Navigation Paths](docs/api/navigation-paths.md) - DynamicNavigationPath, FixedNavigationPath
-- [Coordinator API](docs/api/coordinator.md) - Full Coordinator reference
+- [Route Mixins](docs/api/mixins.md) - Guards, redirects, transitions, and more
+- [Navigation Paths](docs/api/navigation-paths.md) - Stack containers and navigation
+- [Coordinator API](docs/api/coordinator.md) - Full coordinator reference
+- [Core Classes](docs/api/core-classes.md) - RouteTarget and fundamentals
 
-### **🚀 Getting Started**
-- [Getting Started Guide](docs/guides/getting-started.md) - Quick start for each paradigm
-- [Examples](example/) - Complete working examples
+### **💡 Examples**
+- [Imperative Example](example/lib/main_imperative.dart) - Multi-step form
+- [Declarative Example](example/lib/main_declrative.dart) - State-driven navigation
+- [Coordinator Example](example/lib/main_coordinator.dart) - Deep linking & nested navigation
 
-## Examples
+---
 
-Check out the `example/` directory for complete examples:
-
-- **[main_imperative.dart](example/lib/main_imperative.dart)** - Multi-step form with state management
-- **[main_declrative.dart](example/lib/main_declrative.dart)** - State-driven navigation with Myers diff
-- **[main_coordinator.dart](example/lib/main_coordinator.dart)** - Complex nested navigation with deep linking
-
-## Migration
+## Migration Made Easy
 
 ### From Navigator 1.0
 
-ZenRouter's imperative paradigm is similar to Navigator 1.0:
-
 ```dart
-// Navigator 1.0
+// Before (Navigator 1.0)
 Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen()));
 Navigator.pop(context);
 
-// ZenRouter (Imperative)
+// After (ZenRouter Imperative)
 path.push(ProfileRoute());
 path.pop();
 ```
 
-### From Navigator 2.0 / GoRouter
-
-Use the Coordinator paradigm:
+### From GoRouter / Navigator 2.0
 
 ```dart
-// GoRouter
-context.go('/profile/123');
-context.push('/profile/123')
+// Before (GoRouter)
+context.go('/profile');
+context.push('/settings');
 
-// ZenRouter (Coordinator)
-coordinator.replace(ProfileRoute('123'));
-coordinator.push(ProfileRoute('123'));
+// After (ZenRouter Coordinator)
+coordinator.replace(ProfileRoute());
+coordinator.push(SettingsRoute());
 ```
-
-## Platform Support
-
-✅ iOS  
-✅ Android  
-✅ Web  
-✅ macOS  
-✅ Windows  
-✅ Linux  
-
-## Contributing
-
-Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) before submitting PRs.
-
-## License
-
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
-
-## Author
-
-Created by [definev](https://github.com/definev)
 
 ---
 
+## Platform Support
+
+✅ **iOS** - Native page transitions  
+✅ **Android** - Material design support  
+✅ **Web** - Full URL and deep linking  
+✅ **macOS** - Desktop navigation  
+✅ **Windows** - Desktop navigation  
+✅ **Linux** - Desktop navigation  
+
+---
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+Apache 2.0 License - see [LICENSE](LICENSE) for details.
+
+## Created With Love By
+
+[definev](https://github.com/definev)
+
+---
+
+<div align="center">
+
+**The Ultimate Router for Flutter**
+
+[Documentation](docs/guides/getting-started.md) • [Examples](example/) • [Issues](https://github.com/definev/zenrouter/issues)
+
 **Happy Routing! 🧘**
+
+</div>

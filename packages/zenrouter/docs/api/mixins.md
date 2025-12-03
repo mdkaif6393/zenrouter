@@ -49,8 +49,14 @@ mixin RouteUnique on RouteTarget {
   // Build the UI for this route
   Widget build(covariant Coordinator coordinator, BuildContext context);
   
-  // Optional: Parent layout host
-  RouteLayout? get layout => null;
+  // Optional: Parent layout Type
+  Type? get layout => null;
+  
+  // Create a new layout instance (called automatically)
+  RouteLayout? createLayout(covariant Coordinator coordinator);
+  
+  // Resolve or create layout from active layouts (called automatically)
+  RouteLayout? resolveLayout(covariant Coordinator coordinator);
 }
 ```
 
@@ -139,35 +145,35 @@ Creates a navigation host that contains and manages other routes. Essential for 
 
 ```dart
 mixin RouteLayout<T extends RouteUnique> on RouteUnique {
-  // Which navigation path does this host manage?
-  NavigationPath resolvePath(covariant Coordinator coordinator);
+  // Which navigation path does this layout manage?
+  StackPath<RouteUnique> resolvePath(covariant Coordinator coordinator);
   
-  // Optional: Parent host (for nested hosts)
-  RouteLayout? get layout => null;
+  // Builds the layout UI (automatically delegates to layoutBuilderTable)
+  @override
+  Widget build(covariant Coordinator coordinator, BuildContext context);
   
-  // Helper: Build dynamic navigation (stack-based)
-  static Widget defaultBuildForDynamicPath<T extends RouteUnique>(
-    Coordinator coordinator,
-    DynamicNavigationPath<T> path,
-    [GlobalKey<NavigatorState>? navigationKey],
-  );
+  // Optional: Parent layout Type (for nested layouts)
+  @override
+  Type? get layout => null;
   
-  // Helper: Build fixed navigation (indexed)
-  static Widget defaultBuildForFixedPath<T extends RouteUnique>(
-    Coordinator coordinator,
-    FixedNavigationPath<T> path,
+  // Static tables for layout construction and building
+  static Map<Type, RouteLayoutConstructor> layoutConstructorTable = {};
+  static Map<String, RouteLayoutBuilder> layoutBuilderTable = {...};
+  
+  // Register a layout constructor
+  static void defineLayout<T extends RouteLayout>(
+    Type layoutType,
+    T Function() constructor,
   );
 }
 ```
 
-#### Example: Tab Bar Host (Fixed Navigation)
+#### Example: Tab Bar Layout (Indexed Navigation)
 
 ```dart
-class TabBarHost extends AppRoute with RouteLayout<AppRoute> {
-  static final instance = TabBarHost(); // Singleton for stateless host
-  
+class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
   @override
-  FixedNavigationPath resolvePath(AppCoordinator coordinator) =>
+  IndexedStackPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
       coordinator.tabPath;
   
   @override
@@ -178,7 +184,11 @@ class TabBarHost extends AppRoute with RouteLayout<AppRoute> {
     final path = coordinator.tabPath;
     
     return Scaffold(
-      body: RouteLayout.defaultBuildForFixedPath(coordinator, path),
+      body: RouteLayout.layoutBuilderTable[RouteLayout.indexedStackPath]!(
+        coordinator,
+        path,
+        this,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: path.activePathIndex,
         onTap: (index) => switch (index) {
@@ -197,10 +207,10 @@ class TabBarHost extends AppRoute with RouteLayout<AppRoute> {
   }
 }
 
-// Tab routes point to the tab host
+// Tab routes point to the tab layout using Type reference
 class FeedTab extends AppRoute {
   @override
-  RouteLayout? get layout => TabBarHost.instance;
+  Type? get layout => TabBarLayout;
   
   @override
   Uri toUri() => Uri.parse('/tabs/feed');
@@ -210,14 +220,22 @@ class FeedTab extends AppRoute {
     return const Center(child: Text('Feed Tab'));
   }
 }
+
+// Register layout in Coordinator
+class AppCoordinator extends Coordinator<AppRoute> {
+  @override
+  void defineLayout() {
+    RouteLayout.defineLayout(TabBarLayout, () => TabBarLayout());
+  }
+}
 ```
 
-#### Example: Stack Navigation Host (Dynamic Navigation)
+#### Example: Stack Navigation Layout (Dynamic Navigation)
 
 ```dart
-class SettingsHost extends AppRoute with RouteLayout<AppRoute> {
+class SettingsLayout extends AppRoute with RouteLayout<AppRoute> {
   @override
-  DynamicNavigationPath resolvePath(AppCoordinator coordinator) =>
+  NavigationPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
       coordinator.settingsStack;
   
   @override
@@ -227,26 +245,25 @@ class SettingsHost extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: RouteLayout.defaultBuildForDynamicPath(
+      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
         coordinator,
         coordinator.settingsStack,
+        this,
       ),
     );
   }
   
   @override
-  bool operator ==(Object other) => other is SettingsHost;
+  bool operator ==(Object other) => other is SettingsLayout;
   
   @override
   int get hashCode => runtimeType.hashCode;
 }
 
-// Settings routes point to settings host
+// Settings routes point to settings layout using Type reference
 class GeneralSettings extends AppRoute {
-  final _settingsHost = SettingsHost();
-  
   @override
-  RouteLayout? get layout => _settingsHost;
+  Type? get layout => SettingsLayout;
   
   @override
   Uri toUri() => Uri.parse('/settings/general');
@@ -267,17 +284,23 @@ class GeneralSettings extends AppRoute {
     );
   }
 }
+
+// Register layout in Coordinator
+class AppCoordinator extends Coordinator<AppRoute> {
+  @override
+  void defineLayout() {
+    RouteLayout.defineLayout(SettingsLayout, () => SettingsLayout());
+  }
+}
 ```
 
-#### Example: Nested Hosts
+#### Example: Nested Layouts
 
 ```dart
-// Level 1: Main app host
-class AppHost extends AppRoute with RouteLayout<AppRoute> {
-  static final instance = AppHost();
-  
+// Level 1: Main app layout
+class AppLayout extends AppRoute with RouteLayout<AppRoute> {
   @override
-  DynamicNavigationPath resolvePath(AppCoordinator coordinator) =>
+  NavigationPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
       coordinator.mainStack;
   
   @override
@@ -286,23 +309,22 @@ class AppHost extends AppRoute with RouteLayout<AppRoute> {
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
-      body: RouteLayout.defaultBuildForDynamicPath(
+      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
         coordinator,
         coordinator.mainStack,
+        this,
       ),
     );
   }
 }
 
-// Level 2: Tab bar (nested inside AppHost)
-class TabBarHost extends AppRoute with RouteLayout<AppRoute> {
-  static final instance = TabBarHost();
+// Level 2: Tab bar layout (nested inside AppLayout)
+class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
+  @override
+  Type? get layout => AppLayout; // Parent layout Type
   
   @override
-  RouteLayout? get layout => AppHost.instance; // Parent host
-  
-  @override
-  FixedNavigationPath resolvePath(AppCoordinator coordinator) =>
+  IndexedStackPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
       coordinator.tabPath;
   
   @override
@@ -310,19 +332,24 @@ class TabBarHost extends AppRoute with RouteLayout<AppRoute> {
   
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
-    // Tab bar UI...
+    return Scaffold(
+      body: RouteLayout.layoutBuilderTable[RouteLayout.indexedStackPath]!(
+        coordinator,
+        coordinator.tabPath,
+        this,
+      ),
+      bottomNavigationBar: BottomNavigationBar(/* ... */),
+    );
   }
 }
 
-// Level 3: Feed stack (nested inside TabBarHost)
-class FeedHost extends AppRoute with RouteLayout<AppRoute> {
-  static final instance = FeedHost();
+// Level 3: Feed stack layout (nested inside TabBarLayout)
+class FeedLayout extends AppRoute with RouteLayout<AppRoute> {
+  @override
+  Type? get layout => TabBarLayout; // Parent layout Type
   
   @override
-  RouteLayout? get layout => TabBarHost.instance; // Parent host
-  
-  @override
-  DynamicNavigationPath resolvePath(AppCoordinator coordinator) =>
+  NavigationPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
       coordinator.feedStack;
   
   @override
@@ -330,7 +357,21 @@ class FeedHost extends AppRoute with RouteLayout<AppRoute> {
   
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
-    // Feed navigation stack...
+    return RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      coordinator,
+      coordinator.feedStack,
+      this,
+    );
+  }
+}
+
+// Register all layouts in Coordinator
+class AppCoordinator extends Coordinator<AppRoute> {
+  @override
+  void defineLayout() {
+    RouteLayout.defineLayout(AppLayout, () => AppLayout());
+    RouteLayout.defineLayout(TabBarLayout, () => TabBarLayout());
+    RouteLayout.defineLayout(FeedLayout, () => FeedLayout());
   }
 }
 ```

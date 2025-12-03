@@ -4,53 +4,71 @@ Complete API reference for navigation path types in ZenRouter.
 
 ## Overview
 
-Navigation paths are stack-based containers that hold routes. ZenRouter provides two types:
+Navigation paths are stack-based containers that hold routes. ZenRouter provides:
 
-- **`DynamicNavigationPath`** - Mutable stack with push/pop operations
-- **`FixedNavigationPath`** - Immutable stack with index-based navigation
+- **`StackPath`** - Base class for all navigation paths
+- **`NavigationPath`** - Mutable stack with push/pop operations (created via `StackPath.navigationStack()`)
+- **`IndexedStackPath`** - Immutable stack with index-based navigation (created via `StackPath.indexedStack()`)
 - **`NavigationStack`** - Widget that renders a navigation path
 - **`DeclarativeNavigationStack`** - Widget for state-driven navigation
 
 ---
 
-## DynamicNavigationPath<T>
+## StackPath<T>
 
-The core class for imperative navigation. A mutable stack that you control directly with push, pop, and replace operations.
+Base class for all navigation paths. Provides common functionality for managing route stacks.
 
-### Constructor
+### Factory Constructors
+
+#### `StackPath.navigationStack()`
+
+Creates a mutable navigation path with push/pop operations.
 
 ```dart
-DynamicNavigationPath<T extends RouteTarget>([
+static NavigationPath<T> navigationStack<T extends RouteTarget>([
   String? debugLabel,
   List<T>? stack,
 ])
 ```
 
-**Parameters:**
-- `debugLabel`: Optional label for debugging
-- `stack`: Initial routes (default: empty list)
-
 **Example:**
 ```dart
-final path = DynamicNavigationPath<MyRoute>(
+final path = StackPath.navigationStack<MyRoute>(
   'main-nav',
   [HomeRoute()], // Start with home route
 );
 ```
 
-### Properties
+#### `StackPath.indexedStack()`
+
+Creates an indexed navigation path with index-based navigation.
+
+```dart
+static IndexedStackPath<T> indexedStack<T extends RouteTarget>(
+  List<T> stack, [
+  String? debugLabel,
+])
+```
+
+**Example:**
+```dart
+final tabPath = StackPath.indexedStack<TabRoute>([
+  FeedTab(),
+  ProfileTab(),
+  SettingsTab(),
+], 'main-tabs');
+```
+
+### Common Properties
 
 #### `stack` → `List<T>`
 
 Returns an unmodifiable view of the current navigation stack.
 
-The first element is the bottom of the stack (first route), and the last element is the top (current route).
-
 ```dart
 final currentStack = path.stack;
 print('Stack depth: ${currentStack.length}');
 print('Top route: ${currentStack.last}');
-print('Bottom route: ${currentStack.first}');
 ```
 
 #### `debugLabel` → `String?`
@@ -59,6 +77,57 @@ Optional label for debugging purposes.
 
 ```dart
 print(path.debugLabel); // 'main-nav'
+```
+
+#### `activeRoute` → `T?`
+
+The currently active route in the stack.
+
+```dart
+final current = path.activeRoute;
+print('Active route: ${current?.runtimeType}');
+```
+
+### Common Methods
+
+#### `reset()` → `void`
+
+Force clears the entire navigation history.
+
+```dart
+path.reset();
+// Stack is now empty
+```
+
+#### `activateRoute(T route)` → `Future<void>`
+
+Navigates to a specific route.
+
+```dart
+await path.activateRoute(ProfileRoute());
+```
+
+---
+
+## NavigationPath<T>
+
+A mutable navigation path with push/pop operations. Extends `StackPath` with `StackMutatable` mixin.
+
+### Constructor
+
+```dart
+NavigationPath<T extends RouteTarget>([
+  String? debugLabel,
+  List<T>? stack,
+])
+```
+
+**Or use factory:**
+```dart
+final path = StackPath.navigationStack<MyRoute>(
+  'main-nav',
+  [HomeRoute()],
+);
 ```
 
 ### Methods
@@ -218,26 +287,22 @@ path.push(WelcomeRoute());
 
 ---
 
-## FixedNavigationPath<T>
+## IndexedStackPath<T>
 
 An immutable navigation path with index-based navigation. Perfect for tab bars and drawer navigation.
 
 ### Constructor
 
 ```dart
-FixedNavigationPath<T extends RouteTarget>(
+IndexedStackPath<T extends RouteTarget>(
   List<T> stack, [
   String? debugLabel,
 ])
 ```
 
-**Parameters:**
-- `stack`: List of routes (must have at least one route)
-- `debugLabel`: Optional label for debugging
-
-**Example:**
+**Or use factory:**
 ```dart
-final tabPath = FixedNavigationPath<TabRoute>([
+final tabPath = StackPath.indexedStack<TabRoute>([
   FeedTab(),
   ProfileTab(),
   SettingsTab(),
@@ -348,7 +413,7 @@ Widget that renders a navigation path. Works with both `DynamicNavigationPath` a
 ```dart
 NavigationStack<T extends RouteTarget>({
   Key? key,
-  required DynamicNavigationPath<T> path,
+  required NavigationPath<T> path,
   required StackTransitionResolver<T> resolver,
   T? defaultRoute,
   Coordinator? coordinator,
@@ -408,7 +473,7 @@ NavigationStack<T extends RouteTarget>({
 
 ```dart
 class MyApp extends StatelessWidget {
-  final path = DynamicNavigationPath<AppRoute>();
+  final path = StackPath.navigationStack<AppRoute>();
   
   @override
   Widget build(BuildContext context) {

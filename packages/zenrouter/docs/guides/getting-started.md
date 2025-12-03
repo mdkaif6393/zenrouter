@@ -108,7 +108,8 @@ class ProfileRoute extends AppRoute {
 ### 2. Create Navigation Path
 
 ```dart
-final path = DynamicNavigationPath<AppRoute>();
+final path = NavigationPath<AppRoute>();
+// Or use factory: StackPath.navigationStack<AppRoute>()
 ```
 
 ### 3. Render with NavigationStack
@@ -355,7 +356,7 @@ NavigationStack.declarative(
 )
 
 // Use imperative for a modal flow (event-driven)
-final modalPath = DynamicNavigationPath<ModalRoute>();
+final modalPath = NavigationPath<ModalRoute>();
 modalPath.push(Step1Route());
 ```
 
@@ -363,7 +364,7 @@ modalPath.push(Step1Route());
 
 ### Recipe: Tab Bar Navigation
 
-**Use:** Declarative or Coordinator with `FixedNavigationPath`
+**Use:** Declarative or Coordinator with `IndexedStackPath`
 
 ```dart
 // Declarative approach

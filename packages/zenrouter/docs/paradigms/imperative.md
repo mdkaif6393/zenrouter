@@ -20,10 +20,11 @@ The imperative paradigm gives you full, explicit control over the navigation sta
 
 ## Core Concept
 
-In imperative navigation, you work directly with a `DynamicNavigationPath` - a stack-based container for routes. You push routes onto the stack, pop them off, and replace the entire stack as needed.
+In imperative navigation, you work directly with a `NavigationPath` - a stack-based container for routes. You push routes onto the stack, pop them off, and replace the entire stack as needed.
 
 ```dart
-final path = DynamicNavigationPath<RouteTarget>();
+final path = NavigationPath<RouteTarget>();
+// Or: StackPath.navigationStack<RouteTarget>()
 
 // Push a route
 await path.push(ProfileRoute('user123'));
@@ -261,7 +262,8 @@ class SuccessStep extends OnboardingRoute {
 
 ```dart
 // Global navigation path for onboarding
-final onboardingPath = DynamicNavigationPath<OnboardingRoute>();
+final onboardingPath = NavigationPath<OnboardingRoute>();
+// Or: StackPath.navigationStack<OnboardingRoute>()
 ```
 
 ### Step 4: Render with NavigationStack
@@ -292,9 +294,9 @@ class OnboardingApp extends StatelessWidget {
 
 For complete API documentation including all methods, properties, and advanced usage, see:
 
-**[→ Navigation Paths API Reference](../api/navigation-paths.md#dynamicnavigationpath)**
+**[→ Navigation Paths API Reference](../api/navigation-paths.md#navigationpath)**
 
-Quick reference for `DynamicNavigationPath`:
+Quick reference for `NavigationPath`:
 
 | Method | Description |
 |--------|-------------|
@@ -525,4 +527,4 @@ MaterialApp.router(
 - [Declarative Navigation](declarative.md) - State-driven routing
 - [Coordinator Pattern](coordinator.md) - Deep linking and web support
 - [Route Mixins Guide](../api/mixins.md) - RouteGuard, RouteRedirect, and more
-- [DynamicNavigationPath API](../api/navigation-paths.md#dynamicnavigationpath) - Complete API reference
+- [NavigationPath API](../api/navigation-paths.md#navigationpath) - Complete API reference

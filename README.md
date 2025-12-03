@@ -1,24 +1,86 @@
 # ZenRouter 🧘
 
-**The Flutter router that unifies Navigator 1.0 and 2.0 into one elegant system.**
+**The Ultimate Flutter Router for Every Navigation Pattern**
 
-ZenRouter bridges the gap between imperative navigation (Navigator 1.0) and declarative navigation (Navigator 2.0). Start with simple, imperative routing using `NavigationPath`, then optionally add the `Coordinator` pattern to make your app web-ready with deep linking support.
+ZenRouter is the only router you'll ever need - supporting three distinct paradigms to handle any routing scenario, from simple mobile apps to complex web applications with deep linking.
+
+## Three Paradigms. One Router.
+
+🎮 **Imperative** - Direct control for mobile apps and event-driven navigation  
+📊 **Declarative** - State-driven routing for tab bars and dynamic UIs  
+🗺️ **Coordinator** - Deep linking and web support for complex applications  
 
 ## Why ZenRouter?
 
-🎯 **One System, Two Modes** - Use imperative routing for simplicity, or add declarative routing for web support  
-✨ **Progressive Enhancement** - Start simple with NavigationPath, add Coordinator when you need it  
-🔄 **Type-Safe** - Full type safety with compile-time route checking  
-🛡️ **Powerful Guards** - Prevent unwanted navigation with async guards  
-🔗 **Deep Linking Ready** - Built-in URI parsing and web navigation support  
-📦 **Minimal Boilerplate** - Clean mixin-based architecture  
+✨ **One Router, Three Paradigms** - Choose the approach that fits your needs  
+🚀 **Progressive** - Start simple, add complexity only when needed  
+🌐 **Full Web Support** - Built-in deep linking and URL synchronization  
+⚡ **Blazing Fast** - Efficient Myers diff for optimal performance  
+🔒 **Type-Safe** - Catch routing errors at compile-time  
+🛡️ **Powerful** - Guards, redirects, and custom transitions built-in  
+📝 **No Codegen Needed** - Pure Dart, no build_runner or generated files  
 
-## Documentation & Getting Started
+---
 
-For comprehensive documentation, installation guides, and examples, please visit the main package README:
+## 📚 Full Documentation
 
-👉 **[Go to ZenRouter Package Documentation](packages/zenrouter/README.md)**
+For complete documentation, API reference, examples, and getting started guides:
+
+### **👉 [View Full ZenRouter Documentation](packages/zenrouter/README.md)**
+
+---
+
+## Repository Structure
 
 This monorepo contains:
-- **[zenrouter](packages/zenrouter)**: The core routing library
-- **[zenrouter_devtools](packages/zenrouter_devtools)**: DevTools for debugging and monitoring navigation events
+
+- **[zenrouter](packages/zenrouter/)** - The core routing library
+- **[zenrouter_devtools](packages/zenrouter_devtools/)** - DevTools for debugging navigation
+
+---
+
+## Quick Example
+
+```dart
+// Imperative: Direct control
+final path = NavigationPath<AppRoute>();
+path.push(ProfileRoute());
+
+// Declarative: State-driven
+NavigationStack.declarative(
+  routes: [
+    for (final page in pages) PageRoute(page),
+  ],
+  resolver: (route) => StackTransition.material(...),
+)
+
+// Coordinator: Web & deep linking
+class AppCoordinator extends Coordinator<AppRoute> {
+  @override
+  AppRoute parseRouteFromUri(Uri uri) => ...;
+}
+```
+
+---
+
+## Platform Support
+
+✅ iOS • ✅ Android • ✅ Web • ✅ macOS • ✅ Windows • ✅ Linux
+
+---
+
+## License
+
+Apache 2.0 License - see [LICENSE](LICENSE)
+
+## Author
+
+Created by [definev](https://github.com/definev)
+
+---
+
+<div align="center">
+
+**[Get Started →](packages/zenrouter/README.md)**
+
+</div>

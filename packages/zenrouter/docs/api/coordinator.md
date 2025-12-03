@@ -220,7 +220,7 @@ Pushes a route onto its appropriate navigation path.
 
 The coordinator automatically:
 1. Resolves which path the route belongs to (via `route.layout`)
-2. Ensures all parent hosts are in place
+2. Ensures all parent layouts are in place
 3. Pushes the route to the correct path
 4. Updates the browser URL
 
@@ -230,7 +230,7 @@ await coordinator.push(ProfileRoute('user123'));
 
 // The coordinator figures out:
 // 1. Which path ProfileRoute belongs to
-// 2. What parent hosts need to be set up
+// 2. What parent layouts need to be created
 // 3. Pushes route to correct path
 // 4. Updates URL to /profile/user123
 ```
@@ -239,14 +239,14 @@ await coordinator.push(ProfileRoute('user123'));
 ```dart
 class FeedDetailRoute extends AppRoute {
   @override
-  RouteLayout? get layout => FeedTabHost.instance;
+  Type? get layout => FeedTabLayout;
 }
 
 // Pushing FeedDetailRoute
 coordinator.push(FeedDetailRoute('123'));
 
 // Coordinator automatically:
-// 1. Ensures FeedTabHost is in homeStack
+// 1. Creates/resolves FeedTabLayout
 // 2. Pushes FeedDetailRoute to feedStack
 // 3. Updates URL
 ```
@@ -392,6 +392,27 @@ class MyRoute extends AppRoute with RouteDeepLink {
 }
 ```
 
+### `defineLayout()` → `void`
+
+Registers layout constructors for Type-based layout creation.
+
+**Override** to register your layout types:
+
+```dart
+@override
+void defineLayout() {
+  RouteLayout.defineLayout(TabBarLayout, () => TabBarLayout());
+  RouteLayout.defineLayout(SettingsLayout, () => SettingsLayout());
+  RouteLayout.defineLayout(ProductsLayout, () => ProductsLayout());
+}
+```
+
+**Required when:**
+- Using `RouteLayout` with nested navigation
+- Routes specify a `layout` Type
+
+**Important:** Call this in your Coordinator constructor (happens automatically).
+
 ### `layoutBuilder(BuildContext context)` → `Widget`
 
 Builds the root widget (the primary navigator).
@@ -402,10 +423,10 @@ Builds the root widget (the primary navigator).
 @override
 Widget layoutBuilder(BuildContext context) {
   return Scaffold(
-    body: NavigationStack(
-      path: root,
-      coordinator: this,
-      resolver: (route) => defaultResolver(this, route),
+    body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      this,
+      root,
+      null,
     ),
     drawer: Drawer(
       child: DrawerContent(),
@@ -418,10 +439,10 @@ Widget layoutBuilder(BuildContext context) {
 ```dart
 @override
 Widget layoutBuilder(BuildContext context) {
-  return NavigationStack(
-    path: root,
-    coordinator: this,
-    resolver: (route) => defaultResolver(this, route),
+  return RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+    this,
+    root,
+    null,
   );
 }
 ```
@@ -464,36 +485,7 @@ class EditorRoute extends AppRoute with RouteGuard {
 
 ## Helper Methods
 
-### `defaultResolver(Coordinator coordinator, RouteUnique route)` → `StackTransition`
 
-Static helper that resolves routes to transitions.
-
-Uses `RouteTransition` mixin if present, otherwise uses Material transition.
-
-```dart
-NavigationStack(
-  path: path,
-  resolver: (route) => Coordinator.defaultResolver(coordinator, route),
-)
-```
-
-**Behavior:**
-```dart
-// If route has RouteTransition
-class MyRoute extends AppRoute with RouteTransition {
-  @override
-  StackTransition transition(Coordinator coordinator) {
-    return StackTransition.cupertino(build(coordinator, context));
-  }
-}
-// defaultResolver uses the transition() method
-
-// If route doesn't have RouteTransition
-class MyRoute extends AppRoute {
-  // ...
-}
-// defaultResolver uses StackTransition.material()
-```
 
 ---
 
