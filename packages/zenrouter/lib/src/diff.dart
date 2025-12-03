@@ -42,6 +42,13 @@ class Delete<T> extends DiffOp<T> {
 /// Computes the shortest edit script (SES) between two lists using the
 /// Myers O(ND) algorithm. This is the same algorithm used by Git.
 ///
+/// This implementation is optimized for small lists (n ≤ 50) such as
+/// navigation routes, using List-based storage for better cache locality
+/// instead of Map-based storage.
+///
+/// The optional [equals] parameter allows custom equality comparison.
+/// If not provided, the default `==` operator is used.
+///
 /// Example:
 /// ```dart
 /// final oldList = [route1, route2, route3];
@@ -49,46 +56,79 @@ class Delete<T> extends DiffOp<T> {
 /// final ops = myersDiff(oldList, newList);
 /// // ops will contain: [Keep(0,0), Delete(1), Insert(route4, 1), Keep(2,2)]
 /// ```
-List<DiffOp<T>> myersDiff<T>(List<T> oldList, List<T> newList) {
+List<DiffOp<T>> myersDiff<T>(
+  List<T> oldList,
+  List<T> newList, {
+  bool Function(T a, T b)? equals,
+}) {
   final n = oldList.length;
   final m = newList.length;
+
+  // Early exit for empty cases
+  if (n == 0 && m == 0) return const [];
+  if (n == 0) {
+    return List.generate(m, (i) => Insert<T>(newList[i], i), growable: false);
+  }
+  if (m == 0) {
+    return List.generate(n, (i) => Delete<T>(i), growable: false);
+  }
+
   final max = n + m;
+  final offset = max;
+  final equalityCheck = equals ?? (a, b) => a == b;
 
-  // V[k] contains the furthest reaching x value on diagonal k
-  final v = <int, int>{};
+  // Use List instead of Map for better cache locality with small lists.
+  // V[k] contains the furthest reaching x value on diagonal k.
+  // We access v[k] as v[k + offset] to handle negative indices.
+  final vSize = 2 * max + 1;
+  final v = List<int>.filled(vSize, -1, growable: false);
 
-  // Trace stores the V array at each iteration for backtracking
-  final trace = <Map<int, int>>[];
+  // Trace stores snapshots of v for backtracking.
+  // For small lists, copying the list is faster than Map overhead.
+  final trace = <List<int>>[];
 
-  v[1] = 0;
+  v[1 + offset] = 0;
 
   // Find the shortest edit script
   for (var d = 0; d <= max; d++) {
-    trace.add(Map.from(v));
+    // Store snapshot for backtracking
+    trace.add(List.from(v, growable: false));
 
     for (var k = -d; k <= d; k += 2) {
+      final kIndex = k + offset;
       int x;
 
       // Decide whether to move right (insert) or down (delete)
-      if (k == -d || (k != d && (v[k - 1] ?? -1) < (v[k + 1] ?? -1))) {
-        x = v[k + 1] ?? 0;
+      // Add bounds checking to prevent array access errors
+      final kMinusOneIndex = k - 1 + offset;
+      final kPlusOneIndex = k + 1 + offset;
+
+      final kMinusOne = (kMinusOneIndex >= 0 && kMinusOneIndex < vSize)
+          ? v[kMinusOneIndex]
+          : -1;
+      final kPlusOne = (kPlusOneIndex >= 0 && kPlusOneIndex < vSize)
+          ? v[kPlusOneIndex]
+          : -1;
+
+      if (k == -d || (k != d && kMinusOne < kPlusOne)) {
+        x = kPlusOne;
       } else {
-        x = (v[k - 1] ?? 0) + 1;
+        x = kMinusOne + 1;
       }
 
       var y = x - k;
 
       // Follow diagonal (matching elements)
-      while (x < n && y < m && oldList[x] == newList[y]) {
+      while (x < n && y < m && equalityCheck(oldList[x], newList[y])) {
         x++;
         y++;
       }
 
-      v[k] = x;
+      v[kIndex] = x;
 
       // Check if we've reached the end
       if (x >= n && y >= m) {
-        return _backtrack(trace, oldList, newList, d);
+        return _backtrack(trace, oldList, newList, d, offset);
       }
     }
   }
@@ -98,39 +138,58 @@ List<DiffOp<T>> myersDiff<T>(List<T> oldList, List<T> newList) {
 }
 
 /// Backtrack through the trace to construct the edit script.
+///
+/// This function has been optimized to build operations in reverse order
+/// and then reverse the list once at the end, avoiding O(n²) complexity
+/// from repeated insertions at index 0.
 List<DiffOp<T>> _backtrack<T>(
-  List<Map<int, int>> trace,
+  List<List<int>> trace,
   List<T> oldList,
   List<T> newList,
   int d,
+  int offset,
 ) {
   final n = oldList.length;
   final m = newList.length;
   var x = n;
   var y = m;
 
-  final ops = <DiffOp<T>>[];
+  // Build in reverse order to avoid O(n) insertions at index 0.
+  // This changes backtracking from O(n²) to O(n).
+  final opsReversed = <DiffOp<T>>[];
 
   // Backtrack from the end to the beginning
   for (var depth = d; depth >= 0; depth--) {
     final v = trace[depth];
     final k = x - y;
+    final vSize = v.length;
 
     int prevK;
-    if (k == -depth || (k != depth && (v[k - 1] ?? -1) < (v[k + 1] ?? -1))) {
+    // Add bounds checking to prevent array access errors
+    final kMinusOneIndex = k - 1 + offset;
+    final kPlusOneIndex = k + 1 + offset;
+
+    final kMinusOne = (kMinusOneIndex >= 0 && kMinusOneIndex < vSize)
+        ? v[kMinusOneIndex]
+        : -1;
+    final kPlusOne = (kPlusOneIndex >= 0 && kPlusOneIndex < vSize)
+        ? v[kPlusOneIndex]
+        : -1;
+
+    if (k == -depth || (k != depth && kMinusOne < kPlusOne)) {
       prevK = k + 1;
     } else {
       prevK = k - 1;
     }
 
-    final prevX = v[prevK] ?? 0;
+    final prevX = v[prevK + offset];
     final prevY = prevX - prevK;
 
     // Follow diagonal backwards (these are Keep operations)
     while (x > prevX && y > prevY) {
       x--;
       y--;
-      ops.insert(0, Keep<T>(x, y));
+      opsReversed.add(Keep<T>(x, y));
     }
 
     if (depth == 0) break;
@@ -139,15 +198,16 @@ List<DiffOp<T>> _backtrack<T>(
     if (x == prevX) {
       // Insert
       y--;
-      ops.insert(0, Insert<T>(newList[y], y));
+      opsReversed.add(Insert<T>(newList[y], y));
     } else {
       // Delete
       x--;
-      ops.insert(0, Delete<T>(x));
+      opsReversed.add(Delete<T>(x));
     }
   }
 
-  return ops;
+  // Reverse once at the end instead of inserting at 0 each time
+  return opsReversed.reversed.toList();
 }
 
 /// Apply diff operations to a NavigationPath.
@@ -156,13 +216,17 @@ List<DiffOp<T>> _backtrack<T>(
 /// to efficiently update the navigation path from the old state to the new state.
 ///
 /// The operations are processed carefully to maintain correct indices:
-/// - Deletes are processed from highest to lowest index to avoid shifting
-/// - Inserts are processed in order
+/// - If both deletes and inserts exist, we rebuild the stack once
+/// - Deletes alone are processed from highest to lowest index
+/// - Inserts alone are processed by building a new stack
 /// - Keeps are no-ops
 void applyDiff<T extends RouteTarget>(
   DynamicNavigationPath<T> path,
   List<DiffOp<T>> operations,
 ) {
+  // Early exit if no operations
+  if (operations.isEmpty) return;
+
   // Group operations by type for efficient processing
   final deletes = <Delete<T>>[];
   final inserts = <Insert<T>>[];
@@ -179,33 +243,57 @@ void applyDiff<T extends RouteTarget>(
     }
   }
 
-  // Process deletes in reverse order to avoid index shifting issues
-  deletes.sort((a, b) => b.oldIndex.compareTo(a.oldIndex));
-  for (final delete in deletes) {
-    if (delete.oldIndex < path.stack.length) {
-      final element = path.stack[delete.oldIndex];
-      path.remove(element);
-    }
-  }
+  // If we have both deletes and inserts, it's more efficient to
+  // build a new stack in one pass rather than multiple modifications
+  if (deletes.isNotEmpty && inserts.isNotEmpty) {
+    final stackList = path.stack.toList();
 
-  // Process inserts in order
-  for (final insert in inserts) {
-    // Since we've already deleted, we need to insert at the correct position
-    // by pushing and then manually adjusting the stack
-    path.push(insert.element);
-
-    // Move the newly added element to the correct position
-    final currentIndex = path.stack.length - 1;
-    if (currentIndex != insert.newIndex) {
-      final stackList = path.stack.toList();
-      final element = stackList.removeAt(currentIndex);
-      stackList.insert(insert.newIndex, element);
-
-      // Clear and rebuild (this is safe because we're in sync)
-      path.reset();
-      for (final route in stackList) {
-        path.push(route);
+    // Apply deletes (reverse order to maintain indices)
+    deletes.sort((a, b) => b.oldIndex.compareTo(a.oldIndex));
+    for (final delete in deletes) {
+      if (delete.oldIndex < stackList.length) {
+        stackList.removeAt(delete.oldIndex);
       }
+    }
+
+    // Apply inserts
+    for (final insert in inserts) {
+      if (insert.newIndex <= stackList.length) {
+        stackList.insert(insert.newIndex, insert.element);
+      } else {
+        stackList.add(insert.element);
+      }
+    }
+
+    // Rebuild the path once
+    path.reset();
+    for (final route in stackList) {
+      path.push(route);
+    }
+  } else if (deletes.isNotEmpty) {
+    // Only deletes: process in reverse order to avoid index shifting
+    deletes.sort((a, b) => b.oldIndex.compareTo(a.oldIndex));
+    for (final delete in deletes) {
+      if (delete.oldIndex < path.stack.length) {
+        final element = path.stack[delete.oldIndex];
+        path.remove(element);
+      }
+    }
+  } else if (inserts.isNotEmpty) {
+    // Only inserts: build new stack
+    final stackList = path.stack.toList();
+    for (final insert in inserts) {
+      if (insert.newIndex <= stackList.length) {
+        stackList.insert(insert.newIndex, insert.element);
+      } else {
+        stackList.add(insert.element);
+      }
+    }
+
+    // Rebuild the path once
+    path.reset();
+    for (final route in stackList) {
+      path.push(route);
     }
   }
 }

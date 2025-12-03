@@ -25,23 +25,18 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
 
   /// All navigation paths managed by this coordinator.
   ///
-  /// Must include at least [root]. Add additional paths for shells.
+  /// If you add custom paths, make sure to override [paths]
   List<NavigationPath> get paths => [root];
 
   /// Returns the current URI based on the active route.
   Uri get currentUri {
     final activePath = nearestPath;
-
-    if (activePath case FixedNavigationPath activePath) {
-      if (activePath.activeRoute case RouteUnique route) {
-        return route.toUri();
-      }
+    switch (activePath) {
+      case DynamicNavigationPath<T>():
+        return activePath.stack.lastOrNull?.toUri() ?? Uri.parse('/');
+      case FixedNavigationPath<T>():
+        return activePath.activeRoute.toUri();
     }
-    if (activePath.stack.lastOrNull case RouteUnique route) {
-      return route.toUri();
-    }
-
-    return Uri.parse('/');
   }
 
   List<NavigationPath> get activeHostPaths {
@@ -75,7 +70,8 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
     return root;
   }
 
-  NavigationPath get nearestPath => activeHostPaths.lastOrNull ?? root;
+  NavigationPath<T> get nearestPath =>
+      (activeHostPaths.lastOrNull ?? root) as NavigationPath<T>;
 
   /// Parses a [Uri] into a route object.
   ///
@@ -96,14 +92,9 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   /// Handles navigation from a deep link URI.
   ///
   /// If the route has [RouteDeepLink], its custom handler is called.
-  /// Otherwise, uses the route's [deeplinkStrategy] (push or replace).
+  /// Otherwise, [replace] is called.
   FutureOr<void> recoverRouteFromUri(Uri uri) {
     final route = parseRouteFromUri(uri);
-    if (route is RouteDeepLink) {
-      route.deeplinkHandler(this, uri);
-      return null;
-    }
-
     if (route is RouteDeepLink) {
       switch (route.deeplinkStrategy) {
         case DeeplinkStrategy.push:
@@ -148,10 +139,7 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
     }
   }
 
-  /// Replaces the current route with a new one.
-  ///
-  /// Clears the target path and pushes the new route.
-  /// For shell routes, ensures the shell host is also in place.
+  /// Wipes the current navigation stack and replaces it with the new route.
   void replace(T route) async {
     for (final path in paths) {
       path.reset();
@@ -211,7 +199,7 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
     }
   }
 
-  /// Pops the current route from the nearest `navigationStack` path type.
+  /// Pops the last route from the nearest dynamic path.
   void pop() {
     final path = nearestDynamicPath;
     if (path.stack.isNotEmpty) path.pop();
@@ -227,12 +215,13 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
         routerDelegate.navigatorKey,
       );
 
-  /// Attempts to pop the current route, handling guards.
+  /// Attempts to pop the nearest dynamic path.
+  /// The [RouteGuard] logic is handled here.
   ///
   /// Returns:
-  /// - `true` if a route was popped or a guard was handled
-  /// - `false` if there's nothing to pop
-  /// - `null` in edge cases
+  /// - `true` if the route can pop
+  /// - `false` if the route can't pop
+  /// - `null` if the [RouteGuard] want manual control
   Future<bool?> tryPop() async {
     final path = nearestDynamicPath;
 
@@ -256,11 +245,11 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
     return false;
   }
 
-  /// The route information parser for MaterialApp.router.
+  /// The route information parser for [Router]
   late final CoordinatorRouteParser routeInformationParser =
       CoordinatorRouteParser(coordinator: this);
 
-  /// The router delegate for MaterialApp.router.
+  /// The router delegate for [Router]
   late final CoordinatorRouterDelegate routerDelegate =
       CoordinatorRouterDelegate(coordinator: this);
 

@@ -13,11 +13,15 @@ part 'transition.dart';
 sealed class NavigationPath<T extends RouteTarget> extends ChangeNotifier {
   NavigationPath._(this._stack, {this.debugLabel});
 
-  factory NavigationPath.dynamic([String? debugLabel, List<T>? stack]) =
-      DynamicNavigationPath;
+  static DynamicNavigationPath<T> dynamic<T extends RouteTarget>([
+    String? debugLabel,
+    List<T>? stack,
+  ]) => DynamicNavigationPath<T>(debugLabel, stack);
 
-  factory NavigationPath.fixed(List<T> stack, [String? debugLabel]) =
-      FixedNavigationPath;
+  static FixedNavigationPath<T> fixed<T extends RouteTarget>(
+    List<T> stack, [
+    String? debugLabel,
+  ]) => FixedNavigationPath<T>(stack, debugLabel);
 
   /// A label for debugging purposes.
   final String? debugLabel;
@@ -44,8 +48,8 @@ sealed class NavigationPath<T extends RouteTarget> extends ChangeNotifier {
   @override
   String toString() =>
       '${debugLabel ?? hashCode} [${switch (this) {
-        FixedNavigationPath() => 'Fixed',
-        DynamicNavigationPath() => 'Dynamic',
+        FixedNavigationPath<T>() => 'Fixed',
+        DynamicNavigationPath<T>() => 'Dynamic',
       }}]';
 }
 
