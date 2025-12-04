@@ -1,3 +1,8 @@
+## 0.2.1
+- Standardize how to access primitive path layout builder
+    - Define using `definePrimitivePath`
+    - Build using `buildPrimitivePath`
+
 ## 0.2.0
 - BREAKING: Rename `activeHostPaths` to `activeLayoutPaths` to reflect correct concept.
 

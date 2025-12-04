@@ -236,7 +236,8 @@ class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
     final path = coordinator.tabPath;
     
     return Scaffold(
-      body: RouteLayout.layoutBuilderTable[RouteLayout.indexedStackPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        IndexedStackPath,
         coordinator,
         path,
         this,
@@ -297,7 +298,8 @@ class SettingsLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        NavigationPath,
         coordinator,
         coordinator.settingsStack,
         this,
@@ -356,7 +358,8 @@ class AppLayout extends AppRoute with RouteLayout<AppRoute> {
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
-      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        NavigationPath,
         coordinator,
         coordinator.mainStack,
         this,
@@ -380,7 +383,8 @@ class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
-      body: RouteLayout.layoutBuilderTable[RouteLayout.indexedStackPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        IndexedStackPath,
         coordinator,
         coordinator.tabPath,
         this,
@@ -404,7 +408,8 @@ class FeedLayout extends AppRoute with RouteLayout<AppRoute> {
   
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
-    return RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+    return RouteLayout.buildPrimitivePath(
+      NavigationPath,
       coordinator,
       coordinator.feedStack,
       this,

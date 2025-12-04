@@ -87,7 +87,8 @@ class HomeLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
-      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        NavigationPath,
         coordinator,
         coordinator.homeStack,
         this,
@@ -117,7 +118,8 @@ class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
         children: [
           // Tab content
           Expanded(
-            child: RouteLayout.layoutBuilderTable[RouteLayout.indexedStackPath]!(
+            child: RouteLayout.buildPrimitivePath(
+              IndexedStackPath,
               coordinator,
               path,
               this,
@@ -317,7 +319,8 @@ class SettingsLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        NavigationPath,
         coordinator,
         coordinator.settingsStack,
         this,
@@ -620,7 +623,8 @@ class HomeLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
-      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        NavigationPath,
         coordinator,
         coordinator.homeStack,
         this,
@@ -655,7 +659,8 @@ class TabLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     final path = coordinator.tabPath;
     return Scaffold(
-      body: RouteLayout.layoutBuilderTable[RouteLayout.indexedStackPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        IndexedStackPath,
         coordinator,
         path,
         this,

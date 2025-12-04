@@ -65,7 +65,7 @@ mixin RouteLayout<T extends RouteUnique> on RouteUnique {
   /// Table of registered layout builders.
   ///
   /// This maps layout identifiers to their widget builder functions.
-  static Map<String, RouteLayoutBuilder> layoutBuilderTable = {
+  static final Map<String, RouteLayoutBuilder> _layoutBuilderTable = {
     navigationPath: (coordinator, path, layout) => NavigationStack(
       path: path as NavigationPath<RouteUnique>,
       navigatorKey: layout == null
@@ -93,6 +93,32 @@ mixin RouteLayout<T extends RouteUnique> on RouteUnique {
     ),
   };
 
+  @Deprecated(
+    'Do not manage [layoutBuilderTable] manually. Instead, use [buildPrimitivePath] to access it and [definePrimitivePath] to register new builders.',
+  )
+  static Map<String, RouteLayoutBuilder> get layoutBuilderTable =>
+      _layoutBuilderTable;
+
+  static Widget buildPrimitivePath<T extends RouteUnique>(
+    Type type,
+    Coordinator coordinator,
+    StackPath<T> path,
+    RouteLayout<T>? layout,
+  ) {
+    final typeString = type.toString().split('<').first;
+    if (!_layoutBuilderTable.containsKey(typeString)) {
+      throw UnimplementedError(
+        'You are not provide layout builder for [$typeString] yet. If you extends [StackPath] class you must register it at [RouteLayout.layoutBuilderTable] to use the [buildPrimitivePathByType]',
+      );
+    }
+    return _layoutBuilderTable[typeString]!(coordinator, path, layout);
+  }
+
+  static void definePrimitivePath(Type type, RouteLayoutBuilder builder) {
+    final typeString = type.toString().split('<').first;
+    _layoutBuilderTable[typeString] = builder;
+  }
+
   /// Resolves the stack path for this layout.
   ///
   /// This determines which [StackPath] this layout manages.
@@ -106,7 +132,7 @@ mixin RouteLayout<T extends RouteUnique> on RouteUnique {
   Widget build(covariant Coordinator coordinator, BuildContext context) {
     final path = resolvePath(coordinator);
     final pureType = path.runtimeType.toString().split('<').first;
-    final builder = RouteLayout.layoutBuilderTable[pureType];
+    final builder = RouteLayout._layoutBuilderTable[pureType];
     if (builder == null) {
       throw UnimplementedError(
         'If you define new kind of path layout you must register it at [RouteLayout.layoutTable]',

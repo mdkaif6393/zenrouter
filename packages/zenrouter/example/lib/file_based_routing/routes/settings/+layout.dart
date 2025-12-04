@@ -22,7 +22,8 @@ class SettingsLayout extends AppRoute with RouteLayout {
           onPressed: () => coordinator.pop(),
         ),
       ),
-      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        NavigationPath,
         coordinator,
         coordinator.settingsStack,
         this,

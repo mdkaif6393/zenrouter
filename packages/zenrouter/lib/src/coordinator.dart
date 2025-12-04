@@ -253,11 +253,7 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
   ///
   /// Override to customize the root navigation structure.
   Widget layoutBuilder(BuildContext context) =>
-      RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
-        this,
-        root,
-        null,
-      );
+      RouteLayout.buildPrimitivePath(NavigationPath, this, root, null);
 
   /// Attempts to pop the nearest dynamic path.
   /// The [RouteGuard] logic is handled here.

@@ -36,7 +36,7 @@ routes/
     ├── +layout.dart               → Layout for /settings/* routes
     ├── index.dart                 → /settings (default route, layouted by SettingsLayout)
     ├── account.dart               → /settings/account (layouted by SettingsLayout)
-    └── privacy.dart               → /settings/privacy (layouted by SettingsLayout)
+    ├── privacy.dart               → /settings/privacy (layouted by SettingsLayout)
 ```
 
 ## URL Mapping
@@ -50,23 +50,99 @@ routes/
 | `settings/account.dart` | `/settings/account` | `SettingsAccountRoute` | SettingsLayout |
 | `settings/privacy.dart` | `/settings/privacy` | `SettingsPrivacyRoute` | SettingsLayout |
 
-## Layouts and Index Routes
+## Implementation Details
 
-### ✅ DO: Use index.dart for default routes in layout folders
+### 1. Base Route Class
 
+All routes must extend a base class that implements `RouteTarget` and mixes in `RouteUnique`.
+
+```dart
+// coordinator.dart
+abstract class AppRoute extends RouteTarget with RouteUnique {}
 ```
-products/
-├── +layout.dart   ← Layout container
-├── index.dart     ← ✓ Default route for /products
-└── :id.dart       ← Route for /products/:id
+
+### 2. Layout Implementation (`+layout.dart`)
+
+Layouts are special routes that mix in `RouteLayout`. They are responsible for wrapping their child routes.
+
+**Key Requirements:**
+1.  Mixin `RouteLayout`.
+2.  Override `resolvePath` to return the `NavigationPath` that this layout manages.
+3.  In `build`, use `RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!` to render the nested content.
+
+```dart
+// routes/products/+layout.dart
+class ProductsLayout extends AppRoute with RouteLayout {
+  @override
+  NavigationPath<AppRoute> resolvePath(AppCoordinator coordinator) =>
+      coordinator.productsStack;
+
+  @override
+  Uri toUri() => Uri.parse('/products');
+
+  @override
+  Widget build(AppCoordinator coordinator, BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Products')),
+      // Render the nested route content
+      body: RouteLayout.buildPrimitivePath(
+        NavigationPath,
+        coordinator,
+        resolvePath(coordinator),
+        this,
+      ),
+    );
+  }
+}
 ```
 
-### Standalone Routes
+### 3. Route Implementation
 
+Routes that belong to a layout must override the `layout` getter.
+
+```dart
+// routes/products/index.dart
+class ProductsIndexRoute extends AppRoute {
+  @override
+  Type get layout => ProductsLayout; // Specify the layout class
+
+  @override
+  Uri toUri() => Uri.parse('/products');
+
+  @override
+  Widget build(covariant Coordinator coordinator, BuildContext context) {
+    return const Text('Products List');
+  }
+}
 ```
-routes/
-├── home.dart      ← ✓ Standalone route (no layout needed)
-└── about.dart     ← ✓ Another standalone route
+
+### 4. Coordinator Setup
+
+The Coordinator manages the navigation stacks and registers layouts.
+
+```dart
+// coordinator.dart
+class AppCoordinator extends Coordinator<AppRoute> with CoordinatorDebug {
+  // Define navigation stacks
+  final homeStack = NavigationPath<AppRoute>('home');
+  final productsStack = NavigationPath<AppRoute>('products');
+  final settingsStack = NavigationPath<AppRoute>('settings');
+
+  @override
+  List<StackPath> get paths => [root, homeStack, productsStack, settingsStack];
+
+  @override
+  void defineLayout() {
+    // Register layout constructors
+    RouteLayout.layoutConstructorTable[ProductsLayout] = ProductsLayout.new;
+    RouteLayout.layoutConstructorTable[SettingsLayout] = SettingsLayout.new;
+  }
+
+  @override
+  AppRoute parseRouteFromUri(Uri uri) {
+    // Map URLs to routes...
+  }
+}
 ```
 
 ## When to Use Layouts
@@ -82,11 +158,11 @@ Use `+layout.dart` when you need to:
 
 ## Benefits
 
-✅ **Clear Separation** - Layouts vs standalone routes are visually distinct  
-✅ **No Ambiguity** - Can't accidentally navigate to a layout  
-✅ **Intuitive** - File structure clearly shows route hierarchy  
-✅ **Type-Safe** - Path parameters are typed  
-✅ **Code Generation Ready** - Structure enables automatic route generation  
+✅ **Clear Separation** - Layouts vs standalone routes are visually distinct
+✅ **No Ambiguity** - Can't accidentally navigate to a layout
+✅ **Intuitive** - File structure clearly shows route hierarchy
+✅ **Type-Safe** - Path parameters are typed
+✅ **Code Generation Ready** - Structure enables automatic route generation
 
 ## Key Files
 
@@ -94,55 +170,7 @@ Use `+layout.dart` when you need to:
 - **[coordinator.dart](coordinator.dart)** - URL parsing and route mapping
 - **[routes/](routes/)** - All route files following the convention
 
-## Example: Adding a New Route
-
-### Standalone Route (no layout needed)
-
-```dart
-// routes/about.dart
-part of '../coordinator.dart';
-
-class AboutRoute extends AppRoute {
-  @override
-  Uri toUri() => Uri.parse('/about');
-  
-  @override
-  Widget build(covariant Coordinator coordinator, BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('About')),
-      body: const Center(child: Text('About Page')),
-    );
-  }
-}
-```
-
-### Route with Layout
-
-```dart
-// routes/settings/notifications.dart
-part of '../../coordinator.dart';
-
-class SettingsNotificationsRoute extends AppRoute {
-  @override
-  RouteLayout? get layout => SettingsLayout.instance;
-  
-  @override
-  Uri toUri() => Uri.parse('/settings/notifications');
-  
-  @override
-  Widget build(covariant Coordinator coordinator, BuildContext context) {
-    return const Center(child: Text('Notification Settings'));
-  }
-}
-```
-
-Then add to coordinator:
-```dart
-['settings', 'notifications'] => SettingsNotificationsRoute(),
-```
-
 ## See Also
 
 - [Coordinator Pattern Guide](../../../doc/paradigms/coordinator.md)
 - [Coordinator API Reference](../../../doc/api/coordinator.md)
-- [File-Based Routing Practice Guide](../../../practices/file-based-routing/README.md)

@@ -36,12 +36,12 @@ class CustomLayout extends AppRoute with RouteLayout<AppRoute> {
         < 600 => Column(
           children: [
             Expanded(
-              child:
-                  RouteLayout.layoutBuilderTable[RouteLayout.indexedStackPath]!(
-                    coordinator,
-                    path,
-                    this,
-                  ),
+              child: RouteLayout.buildPrimitivePath(
+                IndexedStackPath,
+                coordinator,
+                path,
+                this,
+              ),
             ),
             Container(
               height: 60,

@@ -51,7 +51,8 @@ class HomeLayout extends AppRoute with RouteLayout<AppRoute>, RouteTransition {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home'), backgroundColor: Colors.blue),
-      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        NavigationPath,
         coordinator,
         coordinator.homeStack,
         this,
@@ -88,12 +89,12 @@ class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
         children: [
           // Tab content (IndexedStack is built by RouteLayout)
           Expanded(
-            child:
-                RouteLayout.layoutBuilderTable[RouteLayout.indexedStackPath]!(
-                  coordinator,
-                  path,
-                  this,
-                ),
+            child: RouteLayout.buildPrimitivePath(
+              IndexedStackPath,
+              coordinator,
+              path,
+              this,
+            ),
           ),
           // Tab bar
           Container(
@@ -141,7 +142,8 @@ class SettingsLayout extends AppRoute with RouteLayout<AppRoute> {
         leading: BackButton(onPressed: () => coordinator.tryPop()),
         title: const Text('Settings'),
       ),
-      body: RouteLayout.layoutBuilderTable[RouteLayout.navigationPath]!(
+      body: RouteLayout.buildPrimitivePath(
+        NavigationPath,
         coordinator,
         coordinator.settingsStack,
         this,
