@@ -29,6 +29,9 @@ class LayoutGenerator extends GeneratorForAnnotation<ZenLayout> {
     // Use element.name for the class name
     final className = element.name!;
 
+    // Get coordinator config for route base and coordinator names
+    final config = await _getCoordinatorConfig(buildStep, routesDir);
+
     // Find parent layout by scanning for _layout.dart files in parent directories
     final parentLayout = await _findParentLayout(
       buildStep,
@@ -51,7 +54,45 @@ class LayoutGenerator extends GeneratorForAnnotation<ZenLayout> {
       );
     }
 
-    return _generateLayoutBaseClass(layoutElement);
+    return _generateLayoutBaseClass(layoutElement, config);
+  }
+
+  /// Get coordinator configuration from _coordinator.dart.
+  Future<({String routeBase, String coordinatorName})> _getCoordinatorConfig(
+    BuildStep buildStep,
+    String routesDir,
+  ) async {
+    String routeBase = 'AppRoute';
+    String coordinatorName = 'AppCoordinator';
+
+    final coordinatorGlob = Glob('$routesDir/_coordinator.dart');
+    await for (final asset in buildStep.findAssets(coordinatorGlob)) {
+      final content = await buildStep.readAsString(asset);
+
+      // Parse routeBase
+      final routeBaseMatchSingle = RegExp(
+        r"routeBase:\s*'([^']+)'",
+      ).firstMatch(content);
+      final routeBaseMatchDouble = RegExp(
+        r'routeBase:\s*"([^"]+)"',
+      ).firstMatch(content);
+      if (routeBaseMatchSingle != null) {
+        routeBase = routeBaseMatchSingle.group(1)!;
+      } else if (routeBaseMatchDouble != null) {
+        routeBase = routeBaseMatchDouble.group(1)!;
+      }
+
+      // Parse coordinator name
+      final nameMatchSingle = RegExp(r"name:\s*'([^']+)'").firstMatch(content);
+      final nameMatchDouble = RegExp(r'name:\s*"([^"]+)"').firstMatch(content);
+      if (nameMatchSingle != null) {
+        coordinatorName = nameMatchSingle.group(1)!;
+      } else if (nameMatchDouble != null) {
+        coordinatorName = nameMatchDouble.group(1)!;
+      }
+    }
+
+    return (routeBase: routeBase, coordinatorName: coordinatorName);
   }
 
   /// Find the closest parent _layout.dart file (in PARENT directories only).
@@ -87,7 +128,9 @@ class LayoutGenerator extends GeneratorForAnnotation<ZenLayout> {
     // Search from innermost parent to outermost for _layout.dart
     while (parts.isNotEmpty) {
       final layoutPath = '$routesDir/${parts.join('/')}/_layout.dart';
-      final layoutGlob = Glob(layoutPath);
+      // Escape parentheses in glob patterns - they are special characters
+      final escapedPath = _escapeGlobPattern(layoutPath);
+      final layoutGlob = Glob(escapedPath);
 
       await for (final asset in buildStep.findAssets(layoutGlob)) {
         // Found a layout file, extract the class name
@@ -119,12 +162,23 @@ class LayoutGenerator extends GeneratorForAnnotation<ZenLayout> {
     return null;
   }
 
-  String _generateLayoutBaseClass(LayoutElement layout) {
-    final buffer = StringBuffer();
+  /// Escape special glob characters in a path.
+  String _escapeGlobPattern(String path) {
+    return path.replaceAll('(', '[(]').replaceAll(')', '[)]');
+  }
 
-    final pathType = layout.layoutType == LayoutType.indexed
-        ? 'IndexedStackPath<AppRoute>'
-        : 'NavigationPath<AppRoute>';
+  String _generateLayoutBaseClass(
+    LayoutElement layout,
+    ({String routeBase, String coordinatorName}) config,
+  ) {
+    final buffer = StringBuffer();
+    final routeBase = config.routeBase;
+    final coordinatorName = config.coordinatorName;
+
+    final pathType =
+        layout.layoutType == LayoutType.indexed
+            ? 'IndexedStackPath<$routeBase>'
+            : 'NavigationPath<$routeBase>';
 
     // Generate class declaration
     buffer.writeln('/// Generated base class for ${layout.className}.');
@@ -135,7 +189,7 @@ class LayoutGenerator extends GeneratorForAnnotation<ZenLayout> {
       buffer.writeln('/// Parent layout: ${layout.parentLayoutType}');
     }
     buffer.writeln(
-      'abstract class ${layout.generatedBaseClassName} extends AppRoute with RouteLayout<AppRoute> {',
+      'abstract class ${layout.generatedBaseClassName} extends $routeBase with RouteLayout<$routeBase> {',
     );
     buffer.writeln();
 
@@ -153,7 +207,7 @@ class LayoutGenerator extends GeneratorForAnnotation<ZenLayout> {
     // Generate resolvePath method
     buffer.writeln('  @override');
     buffer.writeln(
-      '  $pathType resolvePath(covariant AppCoordinator coordinator) =>',
+      '  $pathType resolvePath(covariant $coordinatorName coordinator) =>',
     );
     buffer.writeln('      coordinator.${layout.pathFieldName};');
     buffer.writeln();

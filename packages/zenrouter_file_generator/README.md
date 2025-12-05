@@ -9,6 +9,7 @@ This package is part of the [ZenRouter](https://github.com/definev/zenrouter/blo
 - 🗂️ **File = Route** - Each file in `routes/` becomes a route automatically
 - 📁 **Nested layouts** - `_layout.dart` files define layout wrappers for nested routes
 - 🔗 **Dynamic routes** - `[param].dart` files create typed path parameters
+- 📦 **Route groups** - `(name)/` folders wrap routes in layouts without affecting URLs
 - 🎯 **Type-safe navigation** - Generated extension methods for type-safe navigation
 - 📱 **Full ZenRouter support** - Deep linking, guards, redirects, transitions, and more
 - 🚀 **Zero boilerplate** - Routes are generated from your file structure
@@ -19,7 +20,7 @@ Add `zenrouter_file_generator` and `zenrouter` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  zenrouter_file_generator: ^0.1.0
+  zenrouter_file_generator: ^0.2.0
   zenrouter: ^0.2.1
 
 dev_dependencies:
@@ -36,6 +37,10 @@ Organize your routes in `lib/routes/` following these conventions:
 lib/routes/
 ├── index.dart            → /
 ├── about.dart            → /about
+├── (auth)/               → Route group (no URL segment)
+│   ├── _layout.dart      → AuthLayout wrapper
+│   ├── login.dart        → /login
+│   └── register.dart     → /register
 ├── profile/
 │   └── [id].dart         → /profile/:id
 └── tabs/
@@ -44,7 +49,7 @@ lib/routes/
     │   ├── index.dart    → /tabs/feed
     │   └── [postId].dart → /tabs/feed/:postId
     ├── profile.dart      → /tabs/profile
-    └── settings.dart      → /tabs/settings
+    └── settings.dart     → /tabs/settings
 ```
 
 ### 2. Define routes with `@ZenRoute`
@@ -168,10 +173,11 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Type-safe navigation
-coordinator.push(AboutRoute());
-coordinator.pushProfileId('user-123');
-coordinator.goToFeed();
+// Type-safe navigation with generated methods
+coordinator.pushAbout();              // Push to /about
+coordinator.pushProfileId('user-123'); // Push to /profile/user-123
+coordinator.replaceIndex();            // Replace with home
+coordinator.recoverTabProfile();       // Deep link to /tabs/profile
 ```
 
 ## File Naming Conventions
@@ -183,6 +189,120 @@ coordinator.goToFeed();
 | `[id].dart` | `/path/:id` | Dynamic parameter |
 | `_layout.dart` | - | Layout wrapper (not a route) |
 | `_*.dart` | - | Private files (ignored) |
+| `(group)/` | - | Route group (layout without URL segment) |
+
+## Route Groups `(name)`
+
+Route groups allow you to wrap routes with a layout **without adding the folder name to the URL path**. This is useful for:
+
+- Grouping related routes under a shared layout (e.g., auth flows)
+- Organizing routes without affecting URL structure
+- Applying different styling/themes to route groups
+
+### Example
+
+```
+lib/routes/
+├── (auth)/                 # Route group - wraps routes without URL segment
+│   ├── _layout.dart        # AuthLayout - shared auth styling
+│   ├── login.dart          → /login (NOT /(auth)/login)
+│   └── register.dart       → /register (NOT /(auth)/register)
+├── (marketing)/
+│   ├── _layout.dart        # MarketingLayout
+│   ├── landing.dart        → /landing
+│   └── pricing.dart        → /pricing
+└── dashboard/
+    └── index.dart          → /dashboard
+```
+
+### Creating a Route Group Layout
+
+```dart
+// lib/routes/(auth)/_layout.dart
+import 'package:flutter/material.dart';
+import 'package:zenrouter_file_generator/zenrouter_file_generator.dart';
+import 'package:zenrouter/zenrouter.dart';
+
+import '../routes.zen.dart';
+
+part '_layout.g.dart';
+
+@ZenLayout(type: LayoutType.stack)
+class AuthLayout extends _$AuthLayout {
+  @override
+  Widget build(covariant AppCoordinator coordinator, BuildContext context) {
+    return Scaffold(
+      body: Container(
+        // Auth-specific styling (gradient, logo, etc.)
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: [Colors.purple, Colors.blue]),
+        ),
+        child: RouteLayout.buildPrimitivePath(
+          NavigationPath,
+          coordinator,
+          resolvePath(coordinator),
+          this,
+        ),
+      ),
+    );
+  }
+}
+```
+
+### Routes Inside Route Groups
+
+```dart
+// lib/routes/(auth)/login.dart
+import 'package:flutter/material.dart';
+import 'package:zenrouter_file_generator/zenrouter_file_generator.dart';
+
+import '../routes.zen.dart';
+
+part 'login.g.dart';
+
+// URL: /login (not /(auth)/login)
+// Layout: AuthLayout
+@ZenRoute()
+class LoginRoute extends _$LoginRoute {
+  @override
+  Widget build(covariant AppCoordinator coordinator, BuildContext context) {
+    return Center(
+      child: Column(
+        children: [
+          TextField(decoration: InputDecoration(labelText: 'Email')),
+          TextField(decoration: InputDecoration(labelText: 'Password')),
+          ElevatedButton(
+            onPressed: () => coordinator.replaceIndex(),
+            child: const Text('Sign In'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### Generated Code
+
+The generator correctly handles route groups:
+
+```dart
+// Generated parseRouteFromUri
+AppRoute parseRouteFromUri(Uri uri) {
+  return switch (uri.pathSegments) {
+    ['login'] => LoginRoute(),      // /login - wrapped by AuthLayout
+    ['register'] => RegisterRoute(), // /register - wrapped by AuthLayout
+    ['dashboard'] => DashboardRoute(),
+    _ => NotFoundRoute(uri: uri),
+  };
+}
+
+// Generated navigation methods
+extension AppCoordinatorNav on AppCoordinator {
+  Future<dynamic> pushLogin() => push(LoginRoute());
+  Future<dynamic> pushRegister() => push(RegisterRoute());
+}
+```
 
 ## Route Mixins
 
@@ -296,7 +416,7 @@ The generator creates `routes.zen.dart` with:
 - `AppRoute` base class (or custom name via `@ZenCoordinator`)
 - `AppCoordinator` class with `parseRouteFromUri` implementation
 - Navigation path definitions for layouts
-- Type-safe navigation extension methods
+- Type-safe navigation extension methods (push/replace/recover)
 
 ```dart
 // routes.zen.dart (generated)
@@ -321,8 +441,87 @@ class AppCoordinator extends Coordinator<AppRoute> {
 
 // Type-safe navigation extensions
 extension AppCoordinatorNav on AppCoordinator {
-  Future<dynamic> goToAbout() => push(AboutRoute());
+  // Push, Replace, Recover methods for each route
+  Future<dynamic> pushAbout() => push(AboutRoute());
+  void replaceAbout() => replace(AboutRoute());
+  void recoverAbout() => recoverRouteFromUri(AboutRoute().toUri());
+  
+  // Routes with parameters
   Future<dynamic> pushProfileId(String id) => push(ProfileIdRoute(id: id));
+  void replaceProfileId(String id) => replace(ProfileIdRoute(id: id));
+  void recoverProfileId(String id) => recoverRouteFromUri(ProfileIdRoute(id: id).toUri());
+}
+```
+
+### Navigation Methods: Push / Replace / Recover
+
+For each route, the generator creates **three type-safe navigation methods**:
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `push{Route}()` | `Future<dynamic>` | Push route onto stack. Returns result when popped. |
+| `replace{Route}()` | `void` | Replace current route. No navigation history. |
+| `recover{Route}()` | `void` | Restore full navigation state from URI. For deep links. |
+
+#### When to Use Each Method
+
+**`push` - Standard Navigation**
+```dart
+// Navigate forward, user can go back
+coordinator.pushAbout();
+coordinator.pushProfileId('user-123');
+
+// Wait for result when route pops
+final result = await coordinator.pushCheckout();
+if (result == 'success') { /* ... */ }
+```
+
+**`replace` - Replace Current Route**
+```dart
+// After login, replace login screen with home (no back button to login)
+coordinator.replaceIndex();
+
+// Switch tabs without adding to history
+coordinator.replaceTabProfile();
+```
+
+**`recover` - Deep Link / State Restoration**
+```dart
+// Restore complete navigation state from a URI
+// This rebuilds the entire navigation stack to reach the target route
+coordinator.recoverProfileId('user-123');
+// Equivalent to: coordinator.recoverRouteFromUri(Uri.parse('/profile/user-123'));
+
+// Use for:
+// - Deep links from external sources
+// - App state restoration
+// - Sharing URLs that should restore full navigation context
+```
+
+#### Example: Auth Flow
+
+```dart
+// On app start - check auth and recover appropriate state
+if (isLoggedIn) {
+  coordinator.recoverIndex();  // Restore to home with full stack
+} else {
+  coordinator.replaceLogin();  // Show login, no back navigation
+}
+
+// After successful login
+coordinator.replaceIndex();  // Replace login with home
+
+// User taps profile
+coordinator.pushProfileId('current-user');  // Can go back to home
+```
+
+#### Example: Deep Link Handling
+
+```dart
+// When app receives deep link: myapp://profile/user-123
+void handleDeepLink(Uri uri) {
+  // recover rebuilds navigation stack: [Home] -> [Profile]
+  coordinator.recoverProfileId('user-123');
 }
 ```
 

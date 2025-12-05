@@ -29,6 +29,9 @@ class RouteGenerator extends GeneratorForAnnotation<ZenRoute> {
     // Use element.name for the class name
     final className = element.name!;
 
+    // Get coordinator config for route base name
+    final routeBase = await _getRouteBaseName(buildStep, routesDir);
+
     // Find parent layout by scanning for _layout.dart files
     final parentLayout = await _findParentLayout(
       buildStep,
@@ -51,7 +54,31 @@ class RouteGenerator extends GeneratorForAnnotation<ZenRoute> {
       );
     }
 
-    return _generateRouteBaseClass(routeElement, annotation);
+    return _generateRouteBaseClass(routeElement, annotation, routeBase);
+  }
+
+  /// Get the route base name from _coordinator.dart or use default.
+  Future<String> _getRouteBaseName(
+    BuildStep buildStep,
+    String routesDir,
+  ) async {
+    final coordinatorGlob = Glob('$routesDir/_coordinator.dart');
+    await for (final asset in buildStep.findAssets(coordinatorGlob)) {
+      final content = await buildStep.readAsString(asset);
+      // Parse routeBase from @ZenCoordinator annotation
+      final routeBaseMatchSingle = RegExp(
+        r"routeBase:\s*'([^']+)'",
+      ).firstMatch(content);
+      final routeBaseMatchDouble = RegExp(
+        r'routeBase:\s*"([^"]+)"',
+      ).firstMatch(content);
+      if (routeBaseMatchSingle != null) {
+        return routeBaseMatchSingle.group(1)!;
+      } else if (routeBaseMatchDouble != null) {
+        return routeBaseMatchDouble.group(1)!;
+      }
+    }
+    return 'AppRoute'; // Default
   }
 
   /// Find the closest parent _layout.dart file and extract the layout class name.
@@ -81,7 +108,9 @@ class RouteGenerator extends GeneratorForAnnotation<ZenRoute> {
     // Search from innermost to outermost directory for _layout.dart
     while (parts.isNotEmpty) {
       final layoutPath = '$routesDir/${parts.join('/')}/_layout.dart';
-      final layoutGlob = Glob(layoutPath);
+      // Escape parentheses in glob patterns - they are special characters
+      final escapedPath = _escapeGlobPattern(layoutPath);
+      final layoutGlob = Glob(escapedPath);
 
       await for (final asset in buildStep.findAssets(layoutGlob)) {
         // Found a layout file, extract the class name
@@ -113,16 +142,22 @@ class RouteGenerator extends GeneratorForAnnotation<ZenRoute> {
     return null;
   }
 
+  /// Escape special glob characters in a path.
+  String _escapeGlobPattern(String path) {
+    return path.replaceAll('(', '[(]').replaceAll(')', '[)]');
+  }
+
   String _generateRouteBaseClass(
     RouteElement route,
     ConstantReader annotation,
+    String routeBase,
   ) {
     final buffer = StringBuffer();
 
     // Build mixin list
     final mixins = <String>[];
     if (route.hasGuard) mixins.add('RouteGuard');
-    if (route.hasRedirect) mixins.add('RouteRedirect<AppRoute>');
+    if (route.hasRedirect) mixins.add('RouteRedirect<$routeBase>');
     if (route.deepLinkStrategy != null) mixins.add('RouteDeepLink');
     if (route.hasTransition) mixins.add('RouteTransition');
 
@@ -136,7 +171,7 @@ class RouteGenerator extends GeneratorForAnnotation<ZenRoute> {
       buffer.writeln('/// Layout: ${route.parentLayoutType}');
     }
     buffer.writeln(
-      'abstract class ${route.generatedBaseClassName} extends AppRoute$mixinStr {',
+      'abstract class ${route.generatedBaseClassName} extends $routeBase$mixinStr {',
     );
 
     // Generate constructor parameters for dynamic segments

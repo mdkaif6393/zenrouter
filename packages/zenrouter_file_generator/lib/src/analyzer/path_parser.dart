@@ -30,6 +30,9 @@ class PathParser {
       // Skip private files
       if (part.startsWith('_')) continue;
 
+      // Skip route groups (name) - they don't add to URL path
+      if (part.startsWith('(') && part.endsWith(')')) continue;
+
       // Check for dynamic parameter [name]
       // Supports multiple parameters like [profileId] and [collectionId]
       if (part.startsWith('[') && part.endsWith(']')) {
@@ -83,4 +86,3 @@ class ParamInfo {
 
   ParamInfo({required this.name});
 }
-

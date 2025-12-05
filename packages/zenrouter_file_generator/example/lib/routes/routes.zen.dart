@@ -3,6 +3,9 @@
 
 import 'package:zenrouter/zenrouter.dart';
 
+import '(auth)/_layout.dart';
+import '(auth)/login.dart';
+import '(auth)/register.dart';
 import 'about.dart';
 import 'index.dart';
 import 'not_found.dart';
@@ -20,6 +23,9 @@ import 'tabs/feed/for-you/sheet.dart';
 import 'tabs/profile.dart';
 import 'tabs/settings.dart';
 
+export '(auth)/_layout.dart';
+export '(auth)/login.dart';
+export '(auth)/register.dart';
 export 'about.dart';
 export 'index.dart';
 export 'not_found.dart';
@@ -42,6 +48,7 @@ abstract class AppRoute extends RouteTarget with RouteUnique {}
 
 /// Generated coordinator managing all routes.
 class AppCoordinator extends Coordinator<AppRoute> {
+  final NavigationPath<AppRoute> authPath = NavigationPath('stack');
   final IndexedStackPath<AppRoute> tabsPath = IndexedStackPath([
     FeedTabLayout(), TabProfileRoute(), TabSettingsRoute(),
   ], 'tabs');
@@ -52,10 +59,11 @@ class AppCoordinator extends Coordinator<AppRoute> {
   final NavigationPath<AppRoute> forYouPath = NavigationPath('for-you');
 
   @override
-  List<StackPath> get paths => [root, tabsPath, feedTabPath, followingPath, forYouPath];
+  List<StackPath> get paths => [root, authPath, tabsPath, feedTabPath, followingPath, forYouPath];
 
   @override
   void defineLayout() {
+    RouteLayout.defineLayout(AuthLayout, () => AuthLayout());
     RouteLayout.defineLayout(TabsLayout, () => TabsLayout());
     RouteLayout.defineLayout(FeedTabLayout, () => FeedTabLayout());
     RouteLayout.defineLayout(FollowingLayout, () => FollowingLayout());
@@ -75,6 +83,8 @@ class AppCoordinator extends Coordinator<AppRoute> {
       ['tabs', 'profile'] => TabProfileRoute(),
       ['tabs', 'settings'] => TabSettingsRoute(),
       ['profile', final profileId] => ProfileIdRoute(profileId: profileId),
+      ['login'] => LoginRoute(),
+      ['register'] => RegisterRoute(),
       ['about'] => AboutRoute(),
       _ => NotFoundRoute(uri: uri, queries: uri.queryParameters),
     };
@@ -83,6 +93,12 @@ class AppCoordinator extends Coordinator<AppRoute> {
 
 /// Type-safe navigation extension methods.
 extension AppCoordinatorNav on AppCoordinator {
+  Future<dynamic> pushLogin() => push(LoginRoute());
+  void replaceLogin() => replace(LoginRoute());
+  void recoverLogin() => recoverRouteFromUri(LoginRoute().toUri());
+  Future<dynamic> pushRegister() => push(RegisterRoute());
+  void replaceRegister() => replace(RegisterRoute());
+  void recoverRegister() => recoverRouteFromUri(RegisterRoute().toUri());
   Future<dynamic> pushAbout() => push(AboutRoute());
   void replaceAbout() => replace(AboutRoute());
   void recoverAbout() => recoverRouteFromUri(AboutRoute().toUri());
