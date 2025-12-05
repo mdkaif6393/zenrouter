@@ -1,3 +1,8 @@
+## 0.2.2
+- Expose pop result in Coordinator
+- **Fix memory leak**: Complete route result futures when routes are removed via `pushOrMoveToTop`
+- **Fix memory leak**: Complete intermediate route futures during `RouteRedirect.resolve` chain
+
 ## 0.2.1
 - Standardize how to access primitive path layout builder
     - Define using `definePrimitivePath`
