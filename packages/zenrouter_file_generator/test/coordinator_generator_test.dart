@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zenrouter_file_generator/src/annotations.dart';
-import 'package:zenrouter_file_generator/src/analyzer/path_parser.dart';
+import 'package:zenrouter_file_annotation/zenrouter_file_annotation.dart';
 import 'package:zenrouter_file_generator/src/generators/coordinator_generator.dart';
 
 void main() {

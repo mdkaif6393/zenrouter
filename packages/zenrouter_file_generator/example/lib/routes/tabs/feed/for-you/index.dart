@@ -1,7 +1,7 @@
 import 'package:zenrouter_file_generator_example/routes/routes.zen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:zenrouter_file_generator/zenrouter_file_generator.dart';
+import 'package:zenrouter_file_annotation/zenrouter_file_annotation.dart';
 
 part 'index.g.dart';
 

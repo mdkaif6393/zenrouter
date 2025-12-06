@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zenrouter_file_generator/src/analyzer/route_tree.dart';
-import 'package:zenrouter_file_generator/src/analyzer/route_element.dart';
-import 'package:zenrouter_file_generator/src/analyzer/layout_element.dart';
-import 'package:zenrouter_file_generator/src/annotations.dart';
+
+import 'package:zenrouter_file_annotation/zenrouter_file_annotation.dart';
 
 void main() {
   group('RouteTree', () {

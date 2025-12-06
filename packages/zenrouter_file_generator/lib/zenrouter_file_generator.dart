@@ -25,5 +25,4 @@
 /// 4. Run build_runner to generate the routing code.
 library;
 
-export 'src/annotations.dart';
-
+export 'package:zenrouter_file_annotation/zenrouter_file_annotation.dart';

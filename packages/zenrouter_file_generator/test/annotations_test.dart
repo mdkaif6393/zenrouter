@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zenrouter_file_generator/src/annotations.dart';
+import 'package:zenrouter_file_annotation/zenrouter_file_annotation.dart';
 
 void main() {
   group('DeeplinkStrategyType', () {

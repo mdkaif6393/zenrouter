@@ -1,8 +1,7 @@
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 
-import '../annotations.dart';
-import '../analyzer/path_parser.dart';
+import 'package:zenrouter_file_annotation/zenrouter_file_annotation.dart';
 
 /// Generator that produces the aggregated Coordinator and route infrastructure.
 ///
@@ -221,9 +220,10 @@ class CoordinatorGenerator implements Builder {
     final queriesMatch = RegExp(r'queries:\s*\[([^\]]+)\]').firstMatch(content);
     if (queriesMatch != null) {
       final queriesList = queriesMatch.group(1)!;
-      queries = RegExp(
-        r"'([^']+)'",
-      ).allMatches(queriesList).map((m) => m.group(1)!).toList();
+      queries =
+          RegExp(
+            r"'([^']+)'",
+          ).allMatches(queriesList).map((m) => m.group(1)!).toList();
     }
 
     return RouteInfo(
@@ -473,21 +473,19 @@ class CoordinatorGenerator implements Builder {
 
     // Sort routes by specificity (more segments first, static before dynamic)
     // This ensures static routes come before dynamic routes, allowing both to coexist
-    final sortedRoutes = List<RouteInfo>.from(tree.routes)
-      ..sort((a, b) {
-        // More segments first
-        final segmentDiff = b.pathSegments.length - a.pathSegments.length;
-        if (segmentDiff != 0) return segmentDiff;
-        // Static segments before dynamic
-        final aDynamic = a.pathSegments.where((s) => s.startsWith(':')).length;
-        final bDynamic = b.pathSegments.where((s) => s.startsWith(':')).length;
-        return aDynamic - bDynamic;
-      });
+    final sortedRoutes = List<RouteInfo>.from(tree.routes)..sort((a, b) {
+      // More segments first
+      final segmentDiff = b.pathSegments.length - a.pathSegments.length;
+      if (segmentDiff != 0) return segmentDiff;
+      // Static segments before dynamic
+      final aDynamic = a.pathSegments.where((s) => s.startsWith(':')).length;
+      final bDynamic = b.pathSegments.where((s) => s.startsWith(':')).length;
+      return aDynamic - bDynamic;
+    });
 
     // Root route
-    final rootRoute = sortedRoutes
-        .where((r) => r.pathSegments.isEmpty)
-        .firstOrNull;
+    final rootRoute =
+        sortedRoutes.where((r) => r.pathSegments.isEmpty).firstOrNull;
     if (rootRoute != null) {
       if (rootRoute.hasQueries) {
         buffer.writeln(

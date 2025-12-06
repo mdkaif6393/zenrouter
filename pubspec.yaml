@@ -8,3 +8,4 @@ workspace:
   - packages/zenrouter_devtools
   - packages/zenrouter_file_generator
   - packages/zenrouter_file_generator/example
+  - packages/zenrouter_file_annotation

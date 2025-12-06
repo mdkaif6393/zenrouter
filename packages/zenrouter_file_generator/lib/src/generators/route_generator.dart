@@ -2,9 +2,9 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 import 'package:source_gen/source_gen.dart';
+import 'package:zenrouter_file_generator/src/analyzers/route_element.dart';
 
-import '../annotations.dart';
-import '../analyzer/route_element.dart';
+import 'package:zenrouter_file_annotation/zenrouter_file_annotation.dart';
 
 /// Generator for individual route files.
 ///
@@ -39,7 +39,7 @@ class RouteGenerator extends GeneratorForAnnotation<ZenRoute> {
       routesDir,
     );
 
-    final routeElement = RouteElement.fromAnnotatedElement(
+    final routeElement = routeElementFromAnnotatedElement(
       className,
       annotation,
       filePath,
