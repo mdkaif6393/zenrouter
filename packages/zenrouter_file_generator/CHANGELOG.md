@@ -1,3 +1,13 @@
+## 0.2.1
+
+### New Features
+
+- **Extract annotations and analyzer elements into a new `zenrouter_file_annotation` package**
+
+### Breaking Changes
+
+- **Remove `zenrouter_file_generator` from `pubspec.yaml` and move it to `dev_dependencies`**
+
 ## 0.2.0
 
 ### New Features
