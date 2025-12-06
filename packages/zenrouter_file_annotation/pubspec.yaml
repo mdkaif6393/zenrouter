@@ -1,5 +1,5 @@
 name: zenrouter_file_annotation
-description: "Shared annotation and structure for zenrouter file generation and macros."
+description: "Shared annotation and structure for zenrouter file-based routing."
 version: 0.2.1
 publish_to: none
 resolution: workspace
@@ -8,4 +8,3 @@ environment:
   sdk: ^3.7.0
 
 dependencies:
-  meta: ^1.11.0
