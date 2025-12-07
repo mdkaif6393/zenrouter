@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  zenrouter: ^
+  zenrouter: ^0.2.3
 
 dev_dependencies:
   flutter_test:

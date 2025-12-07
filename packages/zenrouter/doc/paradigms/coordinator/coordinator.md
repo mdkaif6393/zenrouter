@@ -584,7 +584,7 @@ class AppCoordinator extends Coordinator<AppRoute> {
 
 All done. Now you can run your app and test it. The final result should be like this:
 
-![Coordinator](https://raw.githubusercontent.com/definev/zenrouter/main/packages/zenrouter/doc/assets/coordinator.gif)
+![Coordinator](https://raw.githubusercontent.com/definev/zenrouter/main/packages/zenrouter/doc/paradigms/coordinator/final.gif)
 
 ## API Reference
 
