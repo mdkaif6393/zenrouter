@@ -10,10 +10,15 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for coverage-badge-action to update gh-pages
+      pull-requests: write  # Required for commenting on PRs
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for coverage-badge-action
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -33,13 +38,137 @@ jobs:
         run: flutter analyze
         continue-on-error: false
 
-      - name: Run tests (zenrouter)
-        run: flutter test
+      - name: Run tests with coverage (zenrouter)
+        run: flutter test --coverage
         working-directory: packages/zenrouter
         continue-on-error: false
 
-      - name: Run tests (zenrouter_file_generator)
-        run: flutter test
+      - name: Run tests with coverage (zenrouter_file_generator)
+        run: flutter test --coverage
         working-directory: packages/zenrouter_file_generator
         continue-on-error: false
+
+      - name: Convert coverage to json-summary
+        run: |
+          # Install lcov for merging coverage files
+          sudo apt-get update
+          sudo apt-get install -y lcov
+          
+          # Convert lcov to json-summary format
+          mkdir -p coverage
+          python3 << 'EOF'
+          import json
+          import os
+          import re
+          import subprocess
+          
+          packages = ['zenrouter', 'zenrouter_file_generator']
+          lcov_files = [f'packages/{pkg}/coverage/lcov.info' for pkg in packages]
+          lcov_files = [f for f in lcov_files if os.path.exists(f)]
+          
+          total_lines = 0
+          covered_lines = 0
+          
+          if lcov_files:
+              # Merge lcov files using lcov command
+              merged_lcov = 'coverage/merged.lcov'
+              try:
+                  # Use lcov to merge files
+                  cmd = ['lcov'] + [f'--add-tracefile={f}' for f in lcov_files] + ['--output-file', merged_lcov]
+                  subprocess.run(cmd, check=False, capture_output=True)
+                  
+                  # Read merged file and extract summary (last LF/LH entries)
+                  if os.path.exists(merged_lcov):
+                      with open(merged_lcov, 'r') as f:
+                          content = f.read()
+                      # Get the last summary entries
+                      lf_matches = re.findall(r'LF:(\d+)', content)
+                      lh_matches = re.findall(r'LH:(\d+)', content)
+                      if lf_matches:
+                          total_lines = int(lf_matches[-1])
+                      if lh_matches:
+                          covered_lines = int(lh_matches[-1])
+              except Exception as e:
+                  print(f'Error merging lcov: {e}, trying direct parsing')
+                  # Fallback: parse each file and sum unique file coverage
+                  file_coverage = {}
+                  for lcov_file in lcov_files:
+                      with open(lcov_file, 'r') as f:
+                          current_file = None
+                          for line in f:
+                              if line.startswith('SF:'):
+                                  current_file = line[3:].strip()
+                              elif line.startswith('LF:') and current_file:
+                                  file_coverage[current_file] = file_coverage.get(current_file, {})
+                                  file_coverage[current_file]['total'] = int(line.split(':')[1])
+                              elif line.startswith('LH:') and current_file:
+                                  file_coverage[current_file] = file_coverage.get(current_file, {})
+                                  file_coverage[current_file]['covered'] = int(line.split(':')[1])
+                      
+                      # Also check for summary at end of file
+                      with open(lcov_file, 'r') as f:
+                          content = f.read()
+                          lf_matches = re.findall(r'LF:(\d+)', content)
+                          lh_matches = re.findall(r'LH:(\d+)', content)
+                          if lf_matches:
+                              total_lines = max(total_lines, int(lf_matches[-1]))
+                          if lh_matches:
+                              covered_lines = max(covered_lines, int(lh_matches[-1]))
+          
+          # Calculate percentage
+          pct = round((covered_lines / total_lines * 100), 2) if total_lines > 0 else 0
+          
+          # Create json-summary format (as expected by coverage-badge-action)
+          summary = {
+              'total': {
+                  'lines': {
+                      'total': total_lines,
+                      'covered': covered_lines,
+                      'skipped': 0,
+                      'pct': pct
+                  }
+              }
+          }
+          
+          with open('coverage/coverage-summary.json', 'w') as f:
+              json.dump(summary, f, indent=2)
+          
+          print(f'Coverage: {covered_lines}/{total_lines} lines ({pct}%)')
+          print(f'Summary written to coverage/coverage-summary.json')
+          EOF
+        continue-on-error: true
+
+      - name: Update Coverage Badge
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: we-cli/coverage-badge-action@main
+        with:
+          coverage_file: coverage/coverage-summary.json
+
+      - name: Comment PR Coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverageFile = 'coverage/coverage-summary.json';
+            
+            if (fs.existsSync(coverageFile)) {
+              const coverage = JSON.parse(fs.readFileSync(coverageFile, 'utf8'));
+              const pct = coverage.total.lines.pct;
+              const covered = coverage.total.lines.covered;
+              const total = coverage.total.lines.total;
+              
+              const body = `## 📊 Coverage Report
+              
+              **Lines:** ${covered}/${total} (${pct}%)
+              
+              Coverage calculated for this PR branch.`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
 
