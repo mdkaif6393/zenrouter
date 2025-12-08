@@ -48,97 +48,105 @@ jobs:
         working-directory: packages/zenrouter_file_generator
         continue-on-error: false
 
-      - name: Convert coverage to json-summary
+      - name: Convert coverage to json-summary for each package
         run: |
-          # Install lcov for merging coverage files
-          sudo apt-get update
-          sudo apt-get install -y lcov
-          
-          # Convert lcov to json-summary format
+          # Convert lcov to json-summary format for each package
           mkdir -p coverage
           python3 << 'EOF'
           import json
           import os
           import re
-          import subprocess
           
           packages = ['zenrouter', 'zenrouter_file_generator']
-          lcov_files = [f'packages/{pkg}/coverage/lcov.info' for pkg in packages]
-          lcov_files = [f for f in lcov_files if os.path.exists(f)]
           
-          total_lines = 0
-          covered_lines = 0
+          def parse_lcov_file(lcov_file):
+              """Parse lcov file and return total/covered lines"""
+              if not os.path.exists(lcov_file):
+                  return 0, 0
+              
+              with open(lcov_file, 'r') as f:
+                  content = f.read()
+              
+              # Extract LF (lines found) and LH (lines hit) from summary
+              # LCOV format: each file has LF/LH, and there's a summary at the end
+              lf_matches = re.findall(r'LF:(\d+)', content)
+              lh_matches = re.findall(r'LH:(\d+)', content)
+              
+              # Use the last entry which is typically the summary
+              total_lines = int(lf_matches[-1]) if lf_matches else 0
+              covered_lines = int(lh_matches[-1]) if lh_matches else 0
+              
+              return total_lines, covered_lines
           
-          if lcov_files:
-              # Merge lcov files using lcov command
-              merged_lcov = 'coverage/merged.lcov'
-              try:
-                  # Use lcov to merge files
-                  cmd = ['lcov'] + [f'--add-tracefile={f}' for f in lcov_files] + ['--output-file', merged_lcov]
-                  subprocess.run(cmd, check=False, capture_output=True)
+          # Process each package separately
+          all_coverages = {}
+          total_all_lines = 0
+          total_all_covered = 0
+          
+          for pkg in packages:
+              lcov_file = f'packages/{pkg}/coverage/lcov.info'
+              total_lines, covered_lines = parse_lcov_file(lcov_file)
+              
+              if total_lines > 0:
+                  pct = round((covered_lines / total_lines * 100), 2)
                   
-                  # Read merged file and extract summary (last LF/LH entries)
-                  if os.path.exists(merged_lcov):
-                      with open(merged_lcov, 'r') as f:
-                          content = f.read()
-                      # Get the last summary entries
-                      lf_matches = re.findall(r'LF:(\d+)', content)
-                      lh_matches = re.findall(r'LH:(\d+)', content)
-                      if lf_matches:
-                          total_lines = int(lf_matches[-1])
-                      if lh_matches:
-                          covered_lines = int(lh_matches[-1])
-              except Exception as e:
-                  print(f'Error merging lcov: {e}, trying direct parsing')
-                  # Fallback: parse each file and sum unique file coverage
-                  file_coverage = {}
-                  for lcov_file in lcov_files:
-                      with open(lcov_file, 'r') as f:
-                          current_file = None
-                          for line in f:
-                              if line.startswith('SF:'):
-                                  current_file = line[3:].strip()
-                              elif line.startswith('LF:') and current_file:
-                                  file_coverage[current_file] = file_coverage.get(current_file, {})
-                                  file_coverage[current_file]['total'] = int(line.split(':')[1])
-                              elif line.startswith('LH:') and current_file:
-                                  file_coverage[current_file] = file_coverage.get(current_file, {})
-                                  file_coverage[current_file]['covered'] = int(line.split(':')[1])
-                      
-                      # Also check for summary at end of file
-                      with open(lcov_file, 'r') as f:
-                          content = f.read()
-                          lf_matches = re.findall(r'LF:(\d+)', content)
-                          lh_matches = re.findall(r'LH:(\d+)', content)
-                          if lf_matches:
-                              total_lines = max(total_lines, int(lf_matches[-1]))
-                          if lh_matches:
-                              covered_lines = max(covered_lines, int(lh_matches[-1]))
+                  # Create json-summary for this package
+                  summary = {
+                      'total': {
+                          'lines': {
+                              'total': total_lines,
+                              'covered': covered_lines,
+                              'skipped': 0,
+                              'pct': pct
+                          }
+                      }
+                  }
+                  
+                  coverage_file = f'coverage/{pkg}-coverage-summary.json'
+                  with open(coverage_file, 'w') as f:
+                      json.dump(summary, f, indent=2)
+                  
+                  print(f'{pkg}: {covered_lines}/{total_lines} lines ({pct}%)')
+                  all_coverages[pkg] = summary
+                  total_all_lines += total_lines
+                  total_all_covered += covered_lines
           
-          # Calculate percentage
-          pct = round((covered_lines / total_lines * 100), 2) if total_lines > 0 else 0
-          
-          # Create json-summary format (as expected by coverage-badge-action)
-          summary = {
-              'total': {
-                  'lines': {
-                      'total': total_lines,
-                      'covered': covered_lines,
-                      'skipped': 0,
-                      'pct': pct
+          # Create overall summary
+          if total_all_lines > 0:
+              overall_pct = round((total_all_covered / total_all_lines * 100), 2)
+              overall_summary = {
+                  'total': {
+                      'lines': {
+                          'total': total_all_lines,
+                          'covered': total_all_covered,
+                          'skipped': 0,
+                          'pct': overall_pct
+                      }
                   }
               }
-          }
-          
-          with open('coverage/coverage-summary.json', 'w') as f:
-              json.dump(summary, f, indent=2)
-          
-          print(f'Coverage: {covered_lines}/{total_lines} lines ({pct}%)')
-          print(f'Summary written to coverage/coverage-summary.json')
+              
+              with open('coverage/coverage-summary.json', 'w') as f:
+                  json.dump(overall_summary, f, indent=2)
+              
+              print(f'Overall: {total_all_covered}/{total_all_lines} lines ({overall_pct}%)')
           EOF
         continue-on-error: true
 
-      - name: Update Coverage Badge
+      - name: Update Coverage Badge (zenrouter)
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: we-cli/coverage-badge-action@main
+        with:
+          coverage_file: coverage/zenrouter-coverage-summary.json
+          badge_name: coverage-zenrouter
+
+      - name: Update Coverage Badge (zenrouter_file_generator)
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: we-cli/coverage-badge-action@main
+        with:
+          coverage_file: coverage/zenrouter_file_generator-coverage-summary.json
+          badge_name: coverage-zenrouter_file_generator
+
+      - name: Update Coverage Badge (overall)
         if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         uses: we-cli/coverage-badge-action@main
         with:
@@ -150,20 +158,30 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const coverageFile = 'coverage/coverage-summary.json';
             
-            if (fs.existsSync(coverageFile)) {
-              const coverage = JSON.parse(fs.readFileSync(coverageFile, 'utf8'));
-              const pct = coverage.total.lines.pct;
-              const covered = coverage.total.lines.covered;
-              const total = coverage.total.lines.total;
-              
-              const body = `## 📊 Coverage Report
-              
-              **Lines:** ${covered}/${total} (${pct}%)
-              
-              Coverage calculated for this PR branch.`;
-              
+            let body = '## 📊 Coverage Report\n\n';
+            let hasCoverage = false;
+            
+            const packages = [
+              { name: 'zenrouter', file: 'coverage/zenrouter-coverage-summary.json' },
+              { name: 'zenrouter_file_generator', file: 'coverage/zenrouter_file_generator-coverage-summary.json' },
+              { name: 'Overall', file: 'coverage/coverage-summary.json' }
+            ];
+            
+            for (const pkg of packages) {
+              if (fs.existsSync(pkg.file)) {
+                const coverage = JSON.parse(fs.readFileSync(pkg.file, 'utf8'));
+                const pct = coverage.total.lines.pct;
+                const covered = coverage.total.lines.covered;
+                const total = coverage.total.lines.total;
+                
+                body += `**${pkg.name}:** ${covered}/${total} lines (${pct}%)\n`;
+                hasCoverage = true;
+              }
+            }
+            
+            if (hasCoverage) {
+              body += '\nCoverage calculated for this PR branch.';
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,

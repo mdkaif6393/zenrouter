@@ -2,6 +2,11 @@
 
 **The Ultimate Flutter Router for Every Navigation Pattern**
 
+[![Test](https://github.com/definev/zenrouter/actions/workflows/test.yml/badge.svg)](https://github.com/definev/zenrouter/actions/workflows/test.yml)
+[![Coverage](https://definev.github.io/zenrouter/badges/coverage.svg)](https://github.com/definev/zenrouter/actions)
+[![zenrouter Coverage](https://definev.github.io/zenrouter/badges/coverage-zenrouter.svg)](https://github.com/definev/zenrouter/actions)
+[![zenrouter_file_generator Coverage](https://definev.github.io/zenrouter/badges/coverage-zenrouter_file_generator.svg)](https://github.com/definev/zenrouter/actions)
+
 ZenRouter is the only router you'll ever need - supporting three distinct paradigms to handle any routing scenario, from simple mobile apps to complex web applications with deep linking.
 
 ## Three Paradigms. One Router.
