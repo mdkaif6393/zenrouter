@@ -1,5 +1,6 @@
 ## 0.3.0
 - Bump version to 0.3.0 
+- Add support for catch-all parameters ([...slugs], [...ids], etc) in routes, including `List<String>` type handling and updated route specificity sorting.
 
 ## 0.2.3
 

@@ -12,6 +12,7 @@ This package is part of the [ZenRouter](https://github.com/definev/zenrouter/blo
 - 🗂️ **File = Route** - Each file in `routes/` becomes a route automatically
 - 📁 **Nested layouts** - `_layout.dart` files define layout wrappers for nested routes
 - 🔗 **Dynamic routes** - `[param].dart` files create typed path parameters
+- 🌟 **Catch-all routes** - `[...params].dart` files capture multiple path segments
 - 📦 **Route groups** - `(name)/` folders wrap routes in layouts without affecting URLs
 - 🎯 **Type-safe navigation** - Generated extension methods for type-safe navigation
 - 📱 **Full ZenRouter support** - Deep linking, guards, redirects, transitions, and more
@@ -23,12 +24,12 @@ Add `zenrouter_file_generator`, `zenrouter_file_annotation` and `zenrouter` to y
 
 ```yaml
 dependencies:
-  zenrouter: ^0.2.1
-  zenrouter_file_annotation: ^0.2.1
+  zenrouter: ^0.3.0
+  zenrouter_file_annotation: ^0.3.0
 
 dev_dependencies:
   build_runner: ^2.10.4
-  zenrouter_file_generator: ^0.2.1
+  zenrouter_file_generator: ^0.3.0
 ```
 
 ## Quick Start
@@ -47,6 +48,9 @@ lib/routes/
 │   └── register.dart     → /register
 ├── profile/
 │   └── [id].dart         → /profile/:id
+├── docs/
+│   └── [...slugs]/       → Catch-all: /docs/a/b/c
+│       └── index.dart    → /docs/any/path
 └── tabs/
     ├── _layout.dart      → Layout for tabs
     ├── feed/
@@ -104,6 +108,99 @@ class ProfileIdRoute extends _$ProfileIdRoute {
   }
 }
 ```
+
+### 3.1 Catch-all parameters with `[...params].dart`
+
+Folders or files named with `[...name]` capture **all remaining path segments** as a `List<String>`. This is useful for:
+
+- Documentation pages: `/docs/getting-started/installation`
+- File paths: `/files/folder/subfolder/file.txt`
+- Arbitrary nested routing: `/blog/2024/01/my-post-title`
+
+```dart
+// lib/routes/docs/[...slugs]/index.dart
+// Matches: /docs/any/number/of/segments
+import 'package:flutter/material.dart';
+import 'package:zenrouter_file_annotation/zenrouter_file_annotation.dart';
+import 'routes.zen.dart';
+
+part 'index.g.dart';
+
+@ZenRoute()
+class DocsRoute extends _$DocsRoute {
+  DocsRoute({required super.slugs}); // slugs is List<String>
+
+  @override
+  Widget build(AppCoordinator coordinator, BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Docs: ${slugs.join('/')}'),
+      body: Center(
+        child: Column(
+          children: [
+            Text('Path segments: ${slugs.length}'),
+            for (final slug in slugs) Text('- $slug'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### Combining with other parameters
+
+You can have additional routes inside a catch-all folder:
+
+```
+lib/routes/
+└── docs/
+    └── [...slugs]/
+        ├── index.dart      → /docs/a/b/c (catch-all)
+        ├── about.dart      → /docs/a/b/c/about
+        └── [id].dart       → /docs/a/b/c/:id
+```
+
+```dart
+// lib/routes/docs/[...slugs]/[id].dart
+// Matches: /docs/any/path/user-123
+@ZenRoute()
+class DocsItemRoute extends _$DocsItemRoute {
+  DocsItemRoute({required super.slugs, required super.id});
+
+  @override
+  Widget build(AppCoordinator coordinator, BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Item: $id')),
+      body: Text('In path: ${slugs.join('/')}'),
+    );
+  }
+}
+```
+
+#### Generated pattern matching
+
+The generator uses Dart's rest patterns for URL parsing:
+
+```dart
+// Generated parseRouteFromUri
+AppRoute parseRouteFromUri(Uri uri) {
+  return switch (uri.pathSegments) {
+    ['docs', ...final slugs] => DocsRoute(slugs: slugs),
+    ['docs', ...final slugs, final id] => DocsItemRoute(slugs: slugs, id: id),
+    _ => NotFoundRoute(uri: uri),
+  };
+}
+
+// Generated navigation methods
+extension AppCoordinatorNav on AppCoordinator {
+  Future<dynamic> pushDocs(List<String> slugs) => 
+    push(DocsRoute(slugs: slugs));
+  Future<dynamic> pushDocsItem(List<String> slugs, String id) => 
+    push(DocsItemRoute(slugs: slugs, id: id));
+}
+```
+
+> **Note:** Only one catch-all parameter is allowed per route. Routes with static segments are prioritized over catch-all routes during matching.
 
 ### 4. Layouts with `_layout.dart`
 
@@ -190,7 +287,8 @@ coordinator.recoverTabProfile();       // Deep link to /tabs/profile
 |---------|-----|-------------|
 | `index.dart` | `/path` | Route at directory level |
 | `about.dart` | `/path/about` | Named route |
-| `[id].dart` | `/path/:id` | Dynamic parameter |
+| `[id].dart` | `/path/:id` | Dynamic parameter (single segment) |
+| `[...slugs]/` | `/path/*` | Catch-all parameter (multiple segments, `List<String>`) |
 | `_layout.dart` | - | Layout wrapper (not a route) |
 | `_*.dart` | - | Private files (ignored) |
 | `(group)/` | - | Route group (layout without URL segment) |
