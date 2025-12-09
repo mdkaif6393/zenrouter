@@ -1,6 +1,7 @@
 ## 0.3.0
 - Breaking change: Change return of `Coordinator.push()` from `Future<dynamic>` to `Future<T?>`
 - Fix `NavigationStack` rerender page everytime `path` updated. Resolve [#10](https://github.com/definev/zenrouter/issues/10).
+- Feat: Add `recover` function
 
 ## 0.2.3
 - Update `activePathIndex` to `activeIndex` in `IndexedStackPath`
