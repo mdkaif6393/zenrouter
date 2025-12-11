@@ -89,12 +89,14 @@ abstract class Coordinator<T extends RouteUnique> with ChangeNotifier {
     return layouts;
   }
 
+  // coverage:ignore-start
   /// Returns the list of active layout paths in the navigation hierarchy.
   ///
   /// This starts from the [root] path and traverses down through active layouts,
   /// collecting the [StackPath] for each level.
   @Deprecated('Use `activeLayoutPaths` insteads')
   List<StackPath> get activeHostPaths => activeLayoutPaths;
+  // coverage:ignore-end
 
   /// Returns the list of active layout paths in the navigation hierarchy.
   ///
