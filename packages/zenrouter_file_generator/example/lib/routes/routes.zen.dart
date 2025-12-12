@@ -4,47 +4,40 @@
 import 'package:zenrouter/zenrouter.dart';
 
 import '(auth)/_layout.dart';
-import '(auth)/login.dart';
-import '(auth)/register.dart';
-import 'about.dart';
-import 'index.dart';
+import '(auth)/login.dart' deferred as _auth__login;
+import '(auth)/register.dart' deferred as _auth__register;
+import 'about.dart' deferred as about;
+import 'index.dart' deferred as index;
 import 'not_found.dart';
-import 'profile/[profileId]/collections/[collectionId].dart';
-import 'profile/[profileId]/index.dart';
+import 'profile/[profileId]/collections/[collectionId].dart'
+    deferred as profile_profileId_collections_collectionId;
+import 'profile/[profileId]/index.dart' deferred as profile_profileId_index;
 import 'profile/general.dart' deferred as profile_general;
 import 'tabs/_layout.dart';
 import 'tabs/feed/_layout.dart';
-import 'tabs/feed/following/[...slugs]/[id].dart';
-import 'tabs/feed/following/[...slugs]/about.dart';
-import 'tabs/feed/following/[...slugs]/index.dart';
-import 'tabs/feed/following/[postId].dart' deferred as tabs_feed_following_postId;
+import 'tabs/feed/following/[...slugs]/[id].dart'
+    deferred as tabs_feed_following__slugs_id;
+import 'tabs/feed/following/[...slugs]/about.dart'
+    deferred as tabs_feed_following__slugs_about;
+import 'tabs/feed/following/[...slugs]/index.dart'
+    deferred as tabs_feed_following__slugs_index;
+import 'tabs/feed/following/[postId].dart'
+    deferred as tabs_feed_following_postId;
 import 'tabs/feed/following/_layout.dart';
-import 'tabs/feed/following/index.dart';
+import 'tabs/feed/following/index.dart' deferred as tabs_feed_following_index;
 import 'tabs/feed/for-you/_layout.dart';
-import 'tabs/feed/for-you/index.dart';
-import 'tabs/feed/for-you/sheet.dart';
+import 'tabs/feed/for-you/index.dart' deferred as tabs_feed_foryou_index;
+import 'tabs/feed/for-you/sheet.dart' deferred as tabs_feed_foryou_sheet;
 import 'tabs/profile.dart';
 import 'tabs/settings.dart';
 
 export 'package:zenrouter/zenrouter.dart';
 export '(auth)/_layout.dart';
-export '(auth)/login.dart';
-export '(auth)/register.dart';
-export 'about.dart';
-export 'index.dart';
 export 'not_found.dart';
-export 'profile/[profileId]/collections/[collectionId].dart';
-export 'profile/[profileId]/index.dart';
 export 'tabs/_layout.dart';
 export 'tabs/feed/_layout.dart';
-export 'tabs/feed/following/[...slugs]/[id].dart';
-export 'tabs/feed/following/[...slugs]/about.dart';
-export 'tabs/feed/following/[...slugs]/index.dart';
 export 'tabs/feed/following/_layout.dart';
-export 'tabs/feed/following/index.dart';
 export 'tabs/feed/for-you/_layout.dart';
-export 'tabs/feed/for-you/index.dart';
-export 'tabs/feed/for-you/sheet.dart';
 export 'tabs/profile.dart';
 export 'tabs/settings.dart';
 
@@ -55,16 +48,26 @@ abstract class AppRoute extends RouteTarget with RouteUnique {}
 class AppCoordinator extends Coordinator<AppRoute> {
   final NavigationPath<AppRoute> authPath = NavigationPath('Auth');
   final IndexedStackPath<AppRoute> tabsPath = IndexedStackPath([
-    FeedTabLayout(), TabProfileRoute(), TabSettingsRoute(),
+    FeedTabLayout(),
+    TabProfileRoute(),
+    TabSettingsRoute(),
   ], 'Tabs');
   final IndexedStackPath<AppRoute> feedTabPath = IndexedStackPath([
-    FollowingLayout(), ForYouLayout(),
+    FollowingLayout(),
+    ForYouLayout(),
   ], 'FeedTab');
   final NavigationPath<AppRoute> followingPath = NavigationPath('Following');
   final NavigationPath<AppRoute> forYouPath = NavigationPath('ForYou');
 
   @override
-  List<StackPath> get paths => [root, authPath, tabsPath, feedTabPath, followingPath, forYouPath];
+  List<StackPath> get paths => [
+    root,
+    authPath,
+    tabsPath,
+    feedTabPath,
+    followingPath,
+    forYouPath,
+  ];
 
   @override
   void defineLayout() {
@@ -78,22 +81,75 @@ class AppCoordinator extends Coordinator<AppRoute> {
   @override
   Future<AppRoute> parseRouteFromUri(Uri uri) async {
     return switch (uri.pathSegments) {
-      [] => IndexRoute(),
-      ['tabs', 'feed', 'for-you', 'sheet'] => ForYouSheetRoute(),
-      ['tabs', 'feed', 'following', final postId] => await () async { await tabs_feed_following_postId.loadLibrary(); return tabs_feed_following_postId.FeedPostRoute(postId: postId); }(),
-      ['tabs', 'feed', 'following'] => FollowingRoute(),
-      ['tabs', 'feed', 'for-you'] => ForYouRoute(),
-      ['profile', final profileId, 'collections', final collectionId] => CollectionsCollectionIdRoute(profileId: profileId, collectionId: collectionId, queries: uri.queryParameters),
-      ['profile', 'general'] => await () async { await profile_general.loadLibrary(); return profile_general.ProfileGeneralRoute(); }(),
+      [] => await () async {
+        await index.loadLibrary();
+        return index.IndexRoute();
+      }(),
+      ['tabs', 'feed', 'for-you', 'sheet'] => await () async {
+        await tabs_feed_foryou_sheet.loadLibrary();
+        return tabs_feed_foryou_sheet.ForYouSheetRoute();
+      }(),
+      ['tabs', 'feed', 'following', final postId] => await () async {
+        await tabs_feed_following_postId.loadLibrary();
+        return tabs_feed_following_postId.FeedPostRoute(postId: postId);
+      }(),
+      ['tabs', 'feed', 'following'] => await () async {
+        await tabs_feed_following_index.loadLibrary();
+        return tabs_feed_following_index.FollowingRoute();
+      }(),
+      ['tabs', 'feed', 'for-you'] => await () async {
+        await tabs_feed_foryou_index.loadLibrary();
+        return tabs_feed_foryou_index.ForYouRoute();
+      }(),
+      ['profile', final profileId, 'collections', final collectionId] =>
+        await () async {
+          await profile_profileId_collections_collectionId.loadLibrary();
+          return profile_profileId_collections_collectionId.CollectionsCollectionIdRoute(
+            profileId: profileId,
+            collectionId: collectionId,
+            queries: uri.queryParameters,
+          );
+        }(),
+      ['profile', 'general'] => await () async {
+        await profile_general.loadLibrary();
+        return profile_general.ProfileGeneralRoute();
+      }(),
       ['tabs', 'profile'] => TabProfileRoute(),
       ['tabs', 'settings'] => TabSettingsRoute(),
-      ['profile', final profileId] => ProfileIdRoute(profileId: profileId),
-      ['login'] => LoginRoute(),
-      ['register'] => RegisterRoute(),
-      ['about'] => AboutRoute(),
-      ['tabs', 'feed', 'following', ...final slugs, 'about'] => FeedDynamicAboutRoute(slugs: slugs),
-      ['tabs', 'feed', 'following', ...final slugs, final id] => FeedDynamicIdRoute(slugs: slugs, id: id),
-      ['tabs', 'feed', 'following', ...final slugs] => FeedDynamicRoute(slugs: slugs),
+      ['profile', final profileId] => await () async {
+        await profile_profileId_index.loadLibrary();
+        return profile_profileId_index.ProfileIdRoute(profileId: profileId);
+      }(),
+      ['login'] => await () async {
+        await _auth__login.loadLibrary();
+        return _auth__login.LoginRoute();
+      }(),
+      ['register'] => await () async {
+        await _auth__register.loadLibrary();
+        return _auth__register.RegisterRoute();
+      }(),
+      ['about'] => await () async {
+        await about.loadLibrary();
+        return about.AboutRoute();
+      }(),
+      ['tabs', 'feed', 'following', ...final slugs, 'about'] => await () async {
+        await tabs_feed_following__slugs_about.loadLibrary();
+        return tabs_feed_following__slugs_about.FeedDynamicAboutRoute(
+          slugs: slugs,
+        );
+      }(),
+      ['tabs', 'feed', 'following', ...final slugs, final id] =>
+        await () async {
+          await tabs_feed_following__slugs_id.loadLibrary();
+          return tabs_feed_following__slugs_id.FeedDynamicIdRoute(
+            slugs: slugs,
+            id: id,
+          );
+        }(),
+      ['tabs', 'feed', 'following', ...final slugs] => await () async {
+        await tabs_feed_following__slugs_index.loadLibrary();
+        return tabs_feed_following__slugs_index.FeedDynamicRoute(slugs: slugs);
+      }(),
       _ => NotFoundRoute(uri: uri, queries: uri.queryParameters),
     };
   }
@@ -101,48 +157,229 @@ class AppCoordinator extends Coordinator<AppRoute> {
 
 /// Type-safe navigation extension methods.
 extension AppCoordinatorNav on AppCoordinator {
-  Future<T?> pushLogin<T extends Object>() => push(LoginRoute());
-  Future<void> replaceLogin() => replace(LoginRoute());
-  Future<void> recoverLogin() => recover(LoginRoute());
-  Future<T?> pushRegister<T extends Object>() => push(RegisterRoute());
-  Future<void> replaceRegister() => replace(RegisterRoute());
-  Future<void> recoverRegister() => recover(RegisterRoute());
-  Future<T?> pushAbout<T extends Object>() => push(AboutRoute());
-  Future<void> replaceAbout() => replace(AboutRoute());
-  Future<void> recoverAbout() => recover(AboutRoute());
-  Future<T?> pushIndex<T extends Object>() => push(IndexRoute());
-  Future<void> replaceIndex() => replace(IndexRoute());
-  Future<void> recoverIndex() => recover(IndexRoute());
-  Future<T?> pushCollectionsCollectionId<T extends Object>(String profileId, String collectionId, [Map<String, String> queries = const {}]) => push(CollectionsCollectionIdRoute(profileId: profileId, collectionId: collectionId, queries: queries));
-  Future<void> replaceCollectionsCollectionId(String profileId, String collectionId, [Map<String, String> queries = const {}]) => replace(CollectionsCollectionIdRoute(profileId: profileId, collectionId: collectionId, queries: queries));
-  Future<void> recoverCollectionsCollectionId(String profileId, String collectionId, [Map<String, String> queries = const {}]) => recover(CollectionsCollectionIdRoute(profileId: profileId, collectionId: collectionId, queries: queries));
-  Future<T?> pushProfileId<T extends Object>(String profileId) => push(ProfileIdRoute(profileId: profileId));
-  Future<void> replaceProfileId(String profileId) => replace(ProfileIdRoute(profileId: profileId));
-  Future<void> recoverProfileId(String profileId) => recover(ProfileIdRoute(profileId: profileId));
-  Future<T?> pushProfileGeneral<T extends Object>() async => push(await () async { await profile_general.loadLibrary(); return profile_general.ProfileGeneralRoute(); }());
-  Future<void> replaceProfileGeneral() async => replace(await () async { await profile_general.loadLibrary(); return profile_general.ProfileGeneralRoute(); }());
-  Future<void> recoverProfileGeneral() async => recover(await () async { await profile_general.loadLibrary(); return profile_general.ProfileGeneralRoute(); }());
-  Future<T?> pushFeedDynamicId<T extends Object>(List<String> slugs, String id) => push(FeedDynamicIdRoute(slugs: slugs, id: id));
-  Future<void> replaceFeedDynamicId(List<String> slugs, String id) => replace(FeedDynamicIdRoute(slugs: slugs, id: id));
-  Future<void> recoverFeedDynamicId(List<String> slugs, String id) => recover(FeedDynamicIdRoute(slugs: slugs, id: id));
-  Future<T?> pushFeedDynamicAbout<T extends Object>(List<String> slugs) => push(FeedDynamicAboutRoute(slugs: slugs));
-  Future<void> replaceFeedDynamicAbout(List<String> slugs) => replace(FeedDynamicAboutRoute(slugs: slugs));
-  Future<void> recoverFeedDynamicAbout(List<String> slugs) => recover(FeedDynamicAboutRoute(slugs: slugs));
-  Future<T?> pushFeedDynamic<T extends Object>(List<String> slugs) => push(FeedDynamicRoute(slugs: slugs));
-  Future<void> replaceFeedDynamic(List<String> slugs) => replace(FeedDynamicRoute(slugs: slugs));
-  Future<void> recoverFeedDynamic(List<String> slugs) => recover(FeedDynamicRoute(slugs: slugs));
-  Future<T?> pushFeedPost<T extends Object>(String postId) async => push(await () async { await tabs_feed_following_postId.loadLibrary(); return tabs_feed_following_postId.FeedPostRoute(postId: postId); }());
-  Future<void> replaceFeedPost(String postId) async => replace(await () async { await tabs_feed_following_postId.loadLibrary(); return tabs_feed_following_postId.FeedPostRoute(postId: postId); }());
-  Future<void> recoverFeedPost(String postId) async => recover(await () async { await tabs_feed_following_postId.loadLibrary(); return tabs_feed_following_postId.FeedPostRoute(postId: postId); }());
-  Future<T?> pushFollowing<T extends Object>() => push(FollowingRoute());
-  Future<void> replaceFollowing() => replace(FollowingRoute());
-  Future<void> recoverFollowing() => recover(FollowingRoute());
-  Future<T?> pushForYou<T extends Object>() => push(ForYouRoute());
-  Future<void> replaceForYou() => replace(ForYouRoute());
-  Future<void> recoverForYou() => recover(ForYouRoute());
-  Future<T?> pushForYouSheet<T extends Object>() => push(ForYouSheetRoute());
-  Future<void> replaceForYouSheet() => replace(ForYouSheetRoute());
-  Future<void> recoverForYouSheet() => recover(ForYouSheetRoute());
+  Future<T?> pushLogin<T extends Object>() async => push(await () async {
+    await _auth__login.loadLibrary();
+    return _auth__login.LoginRoute();
+  }());
+  Future<void> replaceLogin() async => replace(await () async {
+    await _auth__login.loadLibrary();
+    return _auth__login.LoginRoute();
+  }());
+  Future<void> recoverLogin() async => recover(await () async {
+    await _auth__login.loadLibrary();
+    return _auth__login.LoginRoute();
+  }());
+  Future<T?> pushRegister<T extends Object>() async => push(await () async {
+    await _auth__register.loadLibrary();
+    return _auth__register.RegisterRoute();
+  }());
+  Future<void> replaceRegister() async => replace(await () async {
+    await _auth__register.loadLibrary();
+    return _auth__register.RegisterRoute();
+  }());
+  Future<void> recoverRegister() async => recover(await () async {
+    await _auth__register.loadLibrary();
+    return _auth__register.RegisterRoute();
+  }());
+  Future<T?> pushAbout<T extends Object>() async => push(await () async {
+    await about.loadLibrary();
+    return about.AboutRoute();
+  }());
+  Future<void> replaceAbout() async => replace(await () async {
+    await about.loadLibrary();
+    return about.AboutRoute();
+  }());
+  Future<void> recoverAbout() async => recover(await () async {
+    await about.loadLibrary();
+    return about.AboutRoute();
+  }());
+  Future<T?> pushIndex<T extends Object>() async => push(await () async {
+    await index.loadLibrary();
+    return index.IndexRoute();
+  }());
+  Future<void> replaceIndex() async => replace(await () async {
+    await index.loadLibrary();
+    return index.IndexRoute();
+  }());
+  Future<void> recoverIndex() async => recover(await () async {
+    await index.loadLibrary();
+    return index.IndexRoute();
+  }());
+  Future<T?> pushCollectionsCollectionId<T extends Object>(
+    String profileId,
+    String collectionId, [
+    Map<String, String> queries = const {},
+  ]) async => push(await () async {
+    await profile_profileId_collections_collectionId.loadLibrary();
+    return profile_profileId_collections_collectionId.CollectionsCollectionIdRoute(
+      profileId: profileId,
+      collectionId: collectionId,
+      queries: queries,
+    );
+  }());
+  Future<void> replaceCollectionsCollectionId(
+    String profileId,
+    String collectionId, [
+    Map<String, String> queries = const {},
+  ]) async => replace(await () async {
+    await profile_profileId_collections_collectionId.loadLibrary();
+    return profile_profileId_collections_collectionId.CollectionsCollectionIdRoute(
+      profileId: profileId,
+      collectionId: collectionId,
+      queries: queries,
+    );
+  }());
+  Future<void> recoverCollectionsCollectionId(
+    String profileId,
+    String collectionId, [
+    Map<String, String> queries = const {},
+  ]) async => recover(await () async {
+    await profile_profileId_collections_collectionId.loadLibrary();
+    return profile_profileId_collections_collectionId.CollectionsCollectionIdRoute(
+      profileId: profileId,
+      collectionId: collectionId,
+      queries: queries,
+    );
+  }());
+  Future<T?> pushProfileId<T extends Object>(String profileId) async =>
+      push(await () async {
+        await profile_profileId_index.loadLibrary();
+        return profile_profileId_index.ProfileIdRoute(profileId: profileId);
+      }());
+  Future<void> replaceProfileId(String profileId) async =>
+      replace(await () async {
+        await profile_profileId_index.loadLibrary();
+        return profile_profileId_index.ProfileIdRoute(profileId: profileId);
+      }());
+  Future<void> recoverProfileId(String profileId) async =>
+      recover(await () async {
+        await profile_profileId_index.loadLibrary();
+        return profile_profileId_index.ProfileIdRoute(profileId: profileId);
+      }());
+  Future<T?> pushProfileGeneral<T extends Object>() async =>
+      push(await () async {
+        await profile_general.loadLibrary();
+        return profile_general.ProfileGeneralRoute();
+      }());
+  Future<void> replaceProfileGeneral() async => replace(await () async {
+    await profile_general.loadLibrary();
+    return profile_general.ProfileGeneralRoute();
+  }());
+  Future<void> recoverProfileGeneral() async => recover(await () async {
+    await profile_general.loadLibrary();
+    return profile_general.ProfileGeneralRoute();
+  }());
+  Future<T?> pushFeedDynamicId<T extends Object>(
+    List<String> slugs,
+    String id,
+  ) async => push(await () async {
+    await tabs_feed_following__slugs_id.loadLibrary();
+    return tabs_feed_following__slugs_id.FeedDynamicIdRoute(
+      slugs: slugs,
+      id: id,
+    );
+  }());
+  Future<void> replaceFeedDynamicId(List<String> slugs, String id) async =>
+      replace(await () async {
+        await tabs_feed_following__slugs_id.loadLibrary();
+        return tabs_feed_following__slugs_id.FeedDynamicIdRoute(
+          slugs: slugs,
+          id: id,
+        );
+      }());
+  Future<void> recoverFeedDynamicId(List<String> slugs, String id) async =>
+      recover(await () async {
+        await tabs_feed_following__slugs_id.loadLibrary();
+        return tabs_feed_following__slugs_id.FeedDynamicIdRoute(
+          slugs: slugs,
+          id: id,
+        );
+      }());
+  Future<T?> pushFeedDynamicAbout<T extends Object>(List<String> slugs) async =>
+      push(await () async {
+        await tabs_feed_following__slugs_about.loadLibrary();
+        return tabs_feed_following__slugs_about.FeedDynamicAboutRoute(
+          slugs: slugs,
+        );
+      }());
+  Future<void> replaceFeedDynamicAbout(List<String> slugs) async =>
+      replace(await () async {
+        await tabs_feed_following__slugs_about.loadLibrary();
+        return tabs_feed_following__slugs_about.FeedDynamicAboutRoute(
+          slugs: slugs,
+        );
+      }());
+  Future<void> recoverFeedDynamicAbout(List<String> slugs) async =>
+      recover(await () async {
+        await tabs_feed_following__slugs_about.loadLibrary();
+        return tabs_feed_following__slugs_about.FeedDynamicAboutRoute(
+          slugs: slugs,
+        );
+      }());
+  Future<T?> pushFeedDynamic<T extends Object>(List<String> slugs) async =>
+      push(await () async {
+        await tabs_feed_following__slugs_index.loadLibrary();
+        return tabs_feed_following__slugs_index.FeedDynamicRoute(slugs: slugs);
+      }());
+  Future<void> replaceFeedDynamic(List<String> slugs) async =>
+      replace(await () async {
+        await tabs_feed_following__slugs_index.loadLibrary();
+        return tabs_feed_following__slugs_index.FeedDynamicRoute(slugs: slugs);
+      }());
+  Future<void> recoverFeedDynamic(List<String> slugs) async =>
+      recover(await () async {
+        await tabs_feed_following__slugs_index.loadLibrary();
+        return tabs_feed_following__slugs_index.FeedDynamicRoute(slugs: slugs);
+      }());
+  Future<T?> pushFeedPost<T extends Object>(String postId) async =>
+      push(await () async {
+        await tabs_feed_following_postId.loadLibrary();
+        return tabs_feed_following_postId.FeedPostRoute(postId: postId);
+      }());
+  Future<void> replaceFeedPost(String postId) async => replace(await () async {
+    await tabs_feed_following_postId.loadLibrary();
+    return tabs_feed_following_postId.FeedPostRoute(postId: postId);
+  }());
+  Future<void> recoverFeedPost(String postId) async => recover(await () async {
+    await tabs_feed_following_postId.loadLibrary();
+    return tabs_feed_following_postId.FeedPostRoute(postId: postId);
+  }());
+  Future<T?> pushFollowing<T extends Object>() async => push(await () async {
+    await tabs_feed_following_index.loadLibrary();
+    return tabs_feed_following_index.FollowingRoute();
+  }());
+  Future<void> replaceFollowing() async => replace(await () async {
+    await tabs_feed_following_index.loadLibrary();
+    return tabs_feed_following_index.FollowingRoute();
+  }());
+  Future<void> recoverFollowing() async => recover(await () async {
+    await tabs_feed_following_index.loadLibrary();
+    return tabs_feed_following_index.FollowingRoute();
+  }());
+  Future<T?> pushForYou<T extends Object>() async => push(await () async {
+    await tabs_feed_foryou_index.loadLibrary();
+    return tabs_feed_foryou_index.ForYouRoute();
+  }());
+  Future<void> replaceForYou() async => replace(await () async {
+    await tabs_feed_foryou_index.loadLibrary();
+    return tabs_feed_foryou_index.ForYouRoute();
+  }());
+  Future<void> recoverForYou() async => recover(await () async {
+    await tabs_feed_foryou_index.loadLibrary();
+    return tabs_feed_foryou_index.ForYouRoute();
+  }());
+  Future<T?> pushForYouSheet<T extends Object>() async => push(await () async {
+    await tabs_feed_foryou_sheet.loadLibrary();
+    return tabs_feed_foryou_sheet.ForYouSheetRoute();
+  }());
+  Future<void> replaceForYouSheet() async => replace(await () async {
+    await tabs_feed_foryou_sheet.loadLibrary();
+    return tabs_feed_foryou_sheet.ForYouSheetRoute();
+  }());
+  Future<void> recoverForYouSheet() async => recover(await () async {
+    await tabs_feed_foryou_sheet.loadLibrary();
+    return tabs_feed_foryou_sheet.ForYouSheetRoute();
+  }());
   Future<T?> pushTabProfile<T extends Object>() => push(TabProfileRoute());
   Future<void> replaceTabProfile() => replace(TabProfileRoute());
   Future<void> recoverTabProfile() => recover(TabProfileRoute());

@@ -14,6 +14,12 @@ typedef FileImportPath = (String path, bool isDeferred);
 /// - Layout registrations
 /// - Type-safe navigation extensions
 class CoordinatorGenerator implements Builder {
+  /// Global deferred import configuration.
+  /// When true, all routes will use deferred imports unless explicitly disabled.
+  final bool globalDeferredImport;
+
+  CoordinatorGenerator({this.globalDeferredImport = false});
+
   @override
   final buildExtensions = const {
     r'$lib$': ['routes/routes.zen.dart'],
@@ -25,8 +31,8 @@ class CoordinatorGenerator implements Builder {
     final routes = <RouteInfo>[];
     final layouts = <LayoutInfo>[];
     String? customNotFoundRoutePath;
-    // Collect all file paths for imports
-    final allFilePaths = <FileImportPath>{};
+    // Map to track which routes come from which files
+    final routeFileMap = <String, String>{};
 
     // Default coordinator configuration
     String coordinatorName = 'AppCoordinator';
@@ -85,18 +91,12 @@ class CoordinatorGenerator implements Builder {
           // Store file path for error reporting
           info.filePath = input.path;
           routes.add(info);
+          // Track which file this route comes from
+          routeFileMap[info.className] = relativePath;
         } else if (info is LayoutInfo) {
           layouts.add(info);
-        }
-      }
-
-      // Skip private files except _layout and _coordinator
-      if (!fileName.startsWith('_') || fileName == '_layout.dart') {
-        if (info is RouteInfo) {
-          allFilePaths.add((relativePath, info.hasDeferredImport));
-        }
-        if (info is LayoutInfo) {
-          allFilePaths.add((relativePath, false));
+          // Track layout files too
+          routeFileMap[info.className] = relativePath;
         }
       }
     }
@@ -109,13 +109,42 @@ class CoordinatorGenerator implements Builder {
     // Build the route tree
     final tree = _buildRouteTree(routes, layouts);
 
+    // Validate and enforce IndexedStack routes to be non-deferred
+    // This must happen BEFORE we build allFilePaths
+    _validateRouteConflicts(tree.routes);
+    _validateIndexedStackDeferredImports(tree.routes, tree.layouts);
+
+    // Now build allFilePaths with correct deferred import flags
+    final allFilePaths = <FileImportPath>[];
+    for (final route in routes) {
+      final relativePath = routeFileMap[route.className];
+      if (relativePath != null) {
+        final fileName = relativePath.split('/').last;
+        // Skip private files except _layout
+        if (!fileName.startsWith('_')) {
+          allFilePaths.add((relativePath, route.hasDeferredImport));
+        }
+      }
+    }
+    for (final layout in layouts) {
+      final relativePath = routeFileMap[layout.className];
+      if (relativePath != null) {
+        final fileName = relativePath.split('/').last;
+        // Include _layout files
+        if (fileName == '_layout.dart') {
+          allFilePaths.add((relativePath, false));
+        }
+      }
+    }
+
     // Generate coordinator code
     final output = _generateCoordinatorCode(
       tree,
       customNotFoundRoutePath,
-      allFilePaths.toList(),
+      allFilePaths,
       coordinatorName,
       routeBaseName,
+      routeFileMap,
     );
 
     // Write output - path is relative to lib/ since we use $lib$ trigger
@@ -213,7 +242,19 @@ class CoordinatorGenerator implements Builder {
     final hasGuard = content.contains('guard: true');
     final hasRedirect = content.contains('redirect: true');
     final hasTransition = content.contains('transition: true');
-    final hasDeferredImport = content.contains('deferredImport: true');
+
+    // Check for explicit deferredImport annotation
+    bool hasDeferredImport;
+    if (content.contains('deferredImport: false')) {
+      // Explicitly disabled - respect annotation
+      hasDeferredImport = false;
+    } else if (content.contains('deferredImport: true')) {
+      // Explicitly enabled - respect annotation
+      hasDeferredImport = true;
+    } else {
+      // No explicit annotation - use global config
+      hasDeferredImport = globalDeferredImport;
+    }
 
     DeeplinkStrategyType? deepLink;
     if (content.contains('.replace')) {
@@ -377,6 +418,9 @@ class CoordinatorGenerator implements Builder {
   /// IndexedStack displays one child at a time but keeps all children in the
   /// widget tree, so they must be available immediately and cannot use
   /// deferred imports.
+  ///
+  /// This method also enforces hasDeferredImport = false for these routes,
+  /// overriding both annotation and global config.
   void _validateIndexedStackDeferredImports(
     List<RouteInfo> routes,
     List<LayoutInfo> layouts,
@@ -397,15 +441,10 @@ class CoordinatorGenerator implements Builder {
             continue;
           }
 
-          // Check if the route has deferred import
+          // Force deferred import to false for IndexedStack routes
+          // This overrides both annotation and global config
           if (route.hasDeferredImport) {
-            throw ArgumentError(
-              'Route "${route.className}" in IndexedStack layout "${layout.className}" '
-              'cannot use deferred imports.\n'
-              'IndexedStack keeps all children in the widget tree, so deferred imports are not supported.\n'
-              'File: ${route.filePath}\n'
-              'Please remove "deferredImport: true" from the route annotation.',
-            );
+            route.hasDeferredImport = false;
           }
         }
       }
@@ -418,6 +457,9 @@ class CoordinatorGenerator implements Builder {
         .replaceAll('/[', '_')
         .replaceAll('/', '_')
         .replaceAll(']', '')
+        .replaceAll('-', '')
+        .replaceAll('(', '_')
+        .replaceAll(')', '_')
         .replaceFirst('.dart', '');
   }
 
@@ -432,6 +474,7 @@ class CoordinatorGenerator implements Builder {
     List<FileImportPath> allFilePaths,
     String coordinatorName,
     String routeBaseName,
+    Map<String, String> routeFileMap,
   ) {
     final deferredImports = allFilePaths.where((f) => f.$2);
 
@@ -596,11 +639,13 @@ class CoordinatorGenerator implements Builder {
               ? '${rootRoute.className}(queries: uri.queryParameters)'
               : '${rootRoute.className}()';
       if (rootRoute.hasDeferredImport) {
+        final relativePath = routeFileMap[rootRoute.className] ?? 'index.dart';
         buffer.writeln(
-          '      [] => ${_wrapDeferredImportLoad(rootRoute.filePath!, routeInstance)},',
+          '      [] => ${_wrapDeferredImportLoad(relativePath, routeInstance)},',
         );
+      } else {
+        buffer.writeln('      [] => $routeInstance,');
       }
-      buffer.writeln('      [] => $routeInstance,');
     }
 
     // Other routes
@@ -907,7 +952,7 @@ class RouteInfo {
   final bool hasRedirect;
   final DeeplinkStrategyType? deepLinkStrategy;
   final bool hasTransition;
-  final bool hasDeferredImport;
+  bool hasDeferredImport;
   final bool isIndexFile;
   final String originalFileName;
   final List<String>? queries;

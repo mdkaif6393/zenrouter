@@ -406,6 +406,88 @@ extension AppCoordinatorNav on AppCoordinator {
 }
 ```
 
+## Deferred Imports
+
+Improve your app's startup time by lazy-loading routes using deferred imports. When enabled, routes are only loaded when first navigated to, reducing initial bundle size.
+
+### Per-Route Configuration
+
+Enable deferred imports for individual routes:
+
+```dart
+@ZenRoute(deferredImport: true)
+class HeavyRoute extends _$HeavyRoute {
+  // Route implementation
+}
+```
+
+### Global Configuration
+
+Enable deferred imports for all routes via `build.yaml`:
+
+```yaml
+# In your project's build.yaml (not the package's build.yaml)
+targets:
+  $default:
+    builders:
+      zenrouter_file_generator|zen_coordinator:
+        options:
+          deferredImport: true
+```
+
+### Precedence Rules
+
+1. **Route annotation takes precedence**: `deferredImport: false` in annotation overrides global config
+2. **IndexedStack routes are always non-deferred**: Routes in `LayoutType.indexed` cannot use deferred imports
+3. **Otherwise, global config applies**: Routes without explicit annotation use the global setting
+
+### Example with Global Config
+
+```yaml
+# build.yaml
+targets:
+  $default:
+    builders:
+      zenrouter_file_generator|zen_coordinator:
+        options:
+          deferredImport: true  # All routes deferred by default
+```
+
+```dart
+// Most routes use deferred imports automatically
+@ZenRoute()  // Uses global config (deferred)
+class AboutRoute extends _$AboutRoute { }
+
+// Explicitly disable for critical routes
+@ZenRoute(deferredImport: false)  // Override global config
+class HomeRoute extends _$HomeRoute { }
+
+// IndexedStack routes are always non-deferred
+@ZenLayout(
+  type: LayoutType.indexed,
+  routes: [Tab1Route, Tab2Route],  // Always non-deferred
+)
+class TabsLayout extends _$TabsLayout { }
+```
+
+### Generated Code
+
+With deferred imports enabled:
+
+```dart
+// Generated imports
+import 'about.dart' deferred as about;
+import 'home.dart';  // Non-deferred (explicit or IndexedStack)
+
+// Generated navigation
+Future<void> pushAbout() async => push(await () async {
+  await about.loadLibrary();
+  return about.AboutRoute();
+}());
+
+Future<void> pushHome() => push(HomeRoute());  // No deferred loading
+```
+
 ## Route Mixins
 
 Enable advanced behaviors with annotation parameters:
