@@ -402,13 +402,29 @@ abstract class Coordinator<T extends RouteUnique> extends Equatable
   late final CoordinatorRouteParser routeInformationParser =
       CoordinatorRouteParser(coordinator: this);
 
-  /// The router delegate for [Router]
-  late final CoordinatorRouterDelegate routerDelegate =
-      CoordinatorRouterDelegate(coordinator: this);
+  CoordinatorRouterDelegate? _routerDelegate;
 
-  /// The router delegate for [Router] with initial route
-  CoordinatorRouterDelegate routerDelegateWithInitalRoute(T route) =>
-      CoordinatorRouterDelegate(coordinator: this, initialRoute: route);
+  /// The router delegate for [Router] of this coordinator
+  CoordinatorRouterDelegate get routerDelegate =>
+      _routerDelegate ??= CoordinatorRouterDelegate(coordinator: this);
+
+  /// Creates a new router delegate with the given initial route.
+  CoordinatorRouterDelegate routerDelegateWithInitalRoute(T initialRoute) {
+    if (_routerDelegate case CoordinatorRouterDelegate delegate) {
+      if (delegate.initialRoute != initialRoute) {
+        delegate.dispose();
+        _routerDelegate = CoordinatorRouterDelegate(
+          coordinator: this,
+          initialRoute: initialRoute,
+        );
+      }
+      return _routerDelegate!;
+    }
+    return _routerDelegate ??= CoordinatorRouterDelegate(
+      coordinator: this,
+      initialRoute: initialRoute,
+    );
+  }
 
   /// Access to the navigator state.
   NavigatorState get navigator => routerDelegate.navigatorKey.currentState!;

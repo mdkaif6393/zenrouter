@@ -330,14 +330,11 @@ void main() {
     testWidgets('respects deep link even if initialRoute is provided', (
       tester,
     ) async {
-      // Create delegate with initial route (Settings)
-      final delegate = coordinator.routerDelegateWithInitalRoute(
-        SettingsRoute(),
-      );
-
       await tester.pumpWidget(
         MaterialApp.router(
-          routerDelegate: delegate,
+          routerDelegate: coordinator.routerDelegateWithInitalRoute(
+            SettingsRoute(),
+          ),
           routeInformationParser: coordinator.routeInformationParser,
           routeInformationProvider: PlatformRouteInformationProvider(
             initialRouteInformation: RouteInformation(
@@ -358,14 +355,11 @@ void main() {
     testWidgets('uses initialRoute when configuration is root (/)', (
       tester,
     ) async {
-      // Create delegate with initial route (Settings)
-      final delegate = coordinator.routerDelegateWithInitalRoute(
-        SettingsRoute(),
-      );
-
       await tester.pumpWidget(
         MaterialApp.router(
-          routerDelegate: delegate,
+          routerDelegate: coordinator.routerDelegateWithInitalRoute(
+            SettingsRoute(),
+          ),
           routeInformationParser: coordinator.routeInformationParser,
           routeInformationProvider: PlatformRouteInformationProvider(
             initialRouteInformation: RouteInformation(
