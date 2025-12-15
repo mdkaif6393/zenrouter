@@ -99,11 +99,9 @@ mixin RouteLayout<T extends RouteUnique> on RouteUnique {
       listenable: path,
       builder: (context, child) {
         final indexedStackPath = path as IndexedStackPath<RouteUnique>;
-        return IndexedStack(
-          index: indexedStackPath.activeIndex,
-          children: indexedStackPath.stack
-              .map((ele) => ele.build(coordinator, context))
-              .toList(),
+        return IndexedStackPathBuilder(
+          path: indexedStackPath,
+          coordinator: coordinator,
         );
       },
     ),

@@ -246,3 +246,40 @@ class _DeclarativeNavigationStackState<T extends RouteTarget>
     );
   }
 }
+
+/// Widget that builds an [IndexedStack] from a [IndexedStackPath]
+/// This will ensure that the stack will cache pages when rebuilding
+/// the widget tree.
+class IndexedStackPathBuilder<T extends RouteUnique> extends StatefulWidget {
+  const IndexedStackPathBuilder({
+    super.key,
+    required this.path,
+    required this.coordinator,
+  });
+
+  /// The path that maintains the indexed stack state.
+  final IndexedStackPath<T> path;
+
+  /// The coordinator used to resolve and build routes in the stack.
+  final Coordinator coordinator;
+
+  @override
+  State<IndexedStackPathBuilder<T>> createState() =>
+      _IndexedStackPathBuilderState<T>();
+}
+
+class _IndexedStackPathBuilderState<T extends RouteUnique>
+    extends State<IndexedStackPathBuilder<T>> {
+  List<Widget>? _children;
+
+  List<Widget> _buildChildren(List<T> stack) =>
+      stack.map((ele) => ele.build(widget.coordinator, context)).toList();
+
+  @override
+  Widget build(BuildContext context) {
+    return IndexedStack(
+      index: widget.path.activeIndex,
+      children: _children ??= _buildChildren(widget.path.stack),
+    );
+  }
+}
