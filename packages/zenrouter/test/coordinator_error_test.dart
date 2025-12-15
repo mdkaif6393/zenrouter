@@ -125,7 +125,8 @@ class RouteWithMockLayout extends ErrorTestRoute {
 
 /// Test coordinator
 class ErrorTestCoordinator extends Coordinator<ErrorTestRoute> {
-  final NavigationPath<ErrorTestRoute> testStack = NavigationPath('test');
+  late final NavigationPath<ErrorTestRoute> testStack =
+      NavigationPath.createWith(coordinator: this, label: 'test');
 
   @override
   void defineLayout() {
@@ -165,11 +166,11 @@ void main() {
     test(
       'goToIndexed throws StateError with meaningful message for out of bounds index',
       () {
-        final stack = IndexedStackPath<ErrorTestRoute>([
+        final stack = IndexedStackPath<ErrorTestRoute>.create([
           SimpleErrorRoute(id: 'tab1'),
           SimpleErrorRoute(id: 'tab2'),
           SimpleErrorRoute(id: 'tab3'),
-        ], 'test-tabs');
+        ], label: 'test-tabs');
 
         // Test index too high
         expect(
@@ -197,11 +198,11 @@ void main() {
     );
 
     test('goToIndexed allows valid indices', () {
-      final stack = IndexedStackPath<ErrorTestRoute>([
+      final stack = IndexedStackPath<ErrorTestRoute>.create([
         SimpleErrorRoute(id: 'tab1'),
         SimpleErrorRoute(id: 'tab2'),
         SimpleErrorRoute(id: 'tab3'),
-      ], 'test-tabs');
+      ], label: 'test-tabs');
 
       // These should not throw
       expect(() => stack.goToIndexed(0), returnsNormally);
@@ -212,10 +213,10 @@ void main() {
     test(
       'activateRoute throws StateError with meaningful message for route not in stack',
       () {
-        final stack = IndexedStackPath<ErrorTestRoute>([
+        final stack = IndexedStackPath<ErrorTestRoute>.create([
           SimpleErrorRoute(id: 'tab1'),
           SimpleErrorRoute(id: 'tab2'),
-        ], 'test-tabs');
+        ], label: 'test-tabs');
 
         final missingRoute = SimpleErrorRoute(id: 'not-in-stack');
 
@@ -236,10 +237,10 @@ void main() {
       final route1 = SimpleErrorRoute(id: 'tab1');
       final route2 = SimpleErrorRoute(id: 'tab2');
 
-      final stack = IndexedStackPath<ErrorTestRoute>([
+      final stack = IndexedStackPath<ErrorTestRoute>.create([
         route1,
         route2,
-      ], 'test-tabs');
+      ], label: 'test-tabs');
 
       // Should not throw
       expect(() => stack.activateRoute(route1), returnsNormally);
@@ -321,9 +322,9 @@ void main() {
 
   group('Error Message Quality Tests', () {
     test('StateError messages are concise and clear', () async {
-      final stack = IndexedStackPath<ErrorTestRoute>([
+      final stack = IndexedStackPath<ErrorTestRoute>.create([
         SimpleErrorRoute(id: 'tab1'),
-      ], 'test');
+      ], label: 'test');
 
       try {
         await stack.goToIndexed(5);
@@ -411,7 +412,7 @@ void main() {
     test('IndexedStackPath prevents invalid construction', () {
       // Empty stack should be caught by assertion
       expect(
-        () => IndexedStackPath<ErrorTestRoute>([], 'test'),
+        () => IndexedStackPath<ErrorTestRoute>.create([], label: 'test'),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -431,9 +432,9 @@ void main() {
       );
 
       // IndexedStackPath is registered by default
-      final indexedStack = IndexedStackPath<ErrorTestRoute>([
+      final indexedStack = IndexedStackPath<ErrorTestRoute>.create([
         SimpleErrorRoute(id: 'test'),
-      ], 'test');
+      ], label: 'test');
       expect(
         () => RouteLayout.buildPrimitivePath(
           IndexedStackPath,
