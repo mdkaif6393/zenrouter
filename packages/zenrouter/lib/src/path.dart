@@ -152,9 +152,9 @@ class NavigationPath<T extends RouteTarget> extends StackPath<T>
 
   /// Creates a [NavigationPath] with an optional initial stack.
   ///
-  /// This is deprecated. Use [NavigationPath.navigationStack] or [NavigationPath.coordinator] for each usecase.
+  /// This is deprecated. Use [NavigationPath.navigationStack] or [NavigationPath.coordinator] instead.
   @Deprecated(
-    'Use NavigationPath.navigationStack or NavigationPath.coordinator for each usecase',
+    'Use NavigationPath.navigationStack or NavigationPath.coordinator instead',
   )
   factory NavigationPath([
     String? debugLabel,
@@ -164,21 +164,21 @@ class NavigationPath<T extends RouteTarget> extends StackPath<T>
 
   /// Creates a [NavigationPath] with an optional initial stack.
   ///
-  /// This is a factory constructor to provide a more readable API.
+  /// This is the standard way to create a mutable navigation stack.
   factory NavigationPath.navigationStack({
     String? debugLabel,
     List<T>? stack,
-    Coordinator? coordinator,
-  }) => NavigationPath(debugLabel, stack ?? [], coordinator);
+  }) => NavigationPath._(debugLabel, stack ?? [], null);
 
-  /// Creates a [NavigationPath] with an optional initial stack.
+  /// Creates a [NavigationPath] associated with a [Coordinator].
   ///
-  /// This is a factory constructor to provide a more readable API.
+  /// This constructor binds the path to a specific coordinator, allowing it to
+  /// interact with the coordinator for navigation actions.
   factory NavigationPath.coordinator({
     required Coordinator coordinator,
     String? debugLabel,
     List<T>? stack,
-  }) => NavigationPath(debugLabel, stack ?? [], coordinator);
+  }) => NavigationPath._(debugLabel, stack ?? [], coordinator);
 
   /// Removes a specific route from the stack (at any position).
   ///
@@ -212,21 +212,47 @@ class NavigationPath<T extends RouteTarget> extends StackPath<T>
 /// Routes are pre-defined and cannot be added or removed. Navigation switches
 /// the active index.
 class IndexedStackPath<T extends RouteTarget> extends StackPath<T> {
-  @Deprecated('Use IndexedStackPath.coordinator for each usecase')
-  IndexedStackPath(super.stack, [String? debugLabel, Coordinator? coordinator])
+  IndexedStackPath._(super.stack, {super.debugLabel, super.coordinator})
     : assert(stack.isNotEmpty, 'Read-only path must have at least one route'),
-      super._(debugLabel: debugLabel, coordinator: coordinator) {
+      super._() {
     for (final path in stack) {
       /// Set the output of every route to null since this cannot pop
       path.completeOnResult(null, null);
     }
   }
 
+  @Deprecated(
+    'Use IndexedStackPath.indexedStack or IndexedStackPath.coordinator instead',
+  )
+  factory IndexedStackPath(
+    List<T> stack, [
+    String? debugLabel,
+    Coordinator? coordinator,
+  ]) => IndexedStackPath._(
+    stack,
+    debugLabel: debugLabel,
+    coordinator: coordinator,
+  );
+
+  /// Creates an [IndexedStackPath] with a fixed list of routes.
+  ///
+  /// This is the standard way to create a fixed stack for indexed navigation.
+  factory IndexedStackPath.indexedStack(List<T> stack, {String? debugLabel}) =>
+      IndexedStackPath._(stack, debugLabel: debugLabel, coordinator: null);
+
+  /// Creates an [IndexedStackPath] associated with a [Coordinator].
+  ///
+  /// This constructor binds the path to a specific coordinator, allowing it to
+  /// interact with the coordinator for navigation actions.
   factory IndexedStackPath.coordinator(
     List<T> stack, {
     required Coordinator coordinator,
     required String? debugLabel,
-  }) => IndexedStackPath(stack, debugLabel, coordinator);
+  }) => IndexedStackPath._(
+    stack,
+    debugLabel: debugLabel,
+    coordinator: coordinator,
+  );
 
   int _activeIndex = 0;
 
