@@ -140,7 +140,7 @@ String mapPropsToString(Type runtimeType, List<Object?> props) {
   return '$runtimeType(${props.map((prop) => prop.toString()).join(', ')})';
 }
 
-///
+/// Base class for objects that can be compared for equality.
 abstract class Equatable {
   /// Internal properties that are used for deep equality comparison.
   ///

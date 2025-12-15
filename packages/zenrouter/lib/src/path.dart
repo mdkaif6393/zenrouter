@@ -164,10 +164,10 @@ class NavigationPath<T extends RouteTarget> extends StackPath<T>
   ///
   /// This is the standard way to create a mutable navigation stack.
   factory NavigationPath.create({
-    String? debugLabel,
+    String? label,
     List<T>? stack,
     Coordinator? coordinator,
-  }) => NavigationPath._(debugLabel, stack ?? [], coordinator);
+  }) => NavigationPath._(label, stack ?? [], coordinator);
 
   /// Creates a [NavigationPath] associated with a [Coordinator].
   ///
@@ -238,13 +238,9 @@ class IndexedStackPath<T extends RouteTarget> extends StackPath<T> {
   /// This is the standard way to create a fixed stack for indexed navigation.
   factory IndexedStackPath.create(
     List<T> stack, {
-    String? debugLabel,
+    String? label,
     Coordinator? coordinator,
-  }) => IndexedStackPath._(
-    stack,
-    debugLabel: debugLabel,
-    coordinator: coordinator,
-  );
+  }) => IndexedStackPath._(stack, debugLabel: label, coordinator: coordinator);
 
   /// Creates an [IndexedStackPath] associated with a [Coordinator].
   ///
