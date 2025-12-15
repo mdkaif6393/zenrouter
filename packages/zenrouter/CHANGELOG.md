@@ -1,3 +1,6 @@
+## 0.4.1
+- **Fix**: Ensure [Coordinator.routeDelegate] initialize once
+
 ## 0.4.0
 - **Breaking Change**: Deprecated default constructors for `NavigationPath` and `IndexedStackPath`. Use `NavigationPath.create`/`createWith` and `IndexedStackPath.create`/`createWith` instead.
 - **Breaking Change**: Introduced `internalProps` to `RouteTarget` for better deep equality and hash code generation.
