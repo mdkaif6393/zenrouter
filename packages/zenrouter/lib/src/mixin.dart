@@ -24,10 +24,12 @@ mixin RouteDeepLink on RouteUnique {
 ///
 /// Implement [popGuard] to control whether the route can be popped.
 mixin RouteGuard on RouteTarget {
+  // coverage:ignore-start
   /// Called when the route is about to be popped.
   ///
   /// Return `true` to allow the pop, or `false` to prevent it.
   FutureOr<bool> popGuard() => true;
+  // coverage:ignore-end
 
   /// Called in [Coordinator] or [StackPath] that contains [Coordinator] when the route is about to be popped.
   ///
