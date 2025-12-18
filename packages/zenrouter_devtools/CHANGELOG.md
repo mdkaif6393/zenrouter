@@ -1,3 +1,6 @@
+## 0.3.1
+- Bump zenrouter version to 0.4.0
+
 ## 0.3.0
 
 - Modularize `DebugOverlay` into separate tabs for better maintainability.
