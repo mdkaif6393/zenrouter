@@ -169,6 +169,14 @@ class _NavigationStackState<T extends RouteTarget>
     setState(() {});
   }
 
+  bool coordinatorEquals(Coordinator? a, Coordinator? b) {
+    if (a is CoordinatorNavigatorObserver &&
+        b is CoordinatorNavigatorObserver) {
+      return listEquals(a.observers, b.observers);
+    }
+    return false;
+  }
+
   @override
   void didUpdateWidget(covariant NavigationStack<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -179,8 +187,8 @@ class _NavigationStackState<T extends RouteTarget>
       _previousRoutes = [];
       _updatePages();
     }
-    if (oldWidget.observers != widget.observers ||
-        oldWidget.coordinator != widget.coordinator) {
+    if (!listEquals(oldWidget.observers, widget.observers) ||
+        !coordinatorEquals(oldWidget.coordinator, widget.coordinator)) {
       _updateObservers();
     }
   }
