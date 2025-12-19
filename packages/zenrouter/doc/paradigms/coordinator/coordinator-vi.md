@@ -363,12 +363,7 @@ class HomeLayout extends AppRoute with RouteLayout<AppRoute> {
     final path = resolvePath(coordinator);
 
     return Scaffold(
-      body: RouteLayout.buildPrimitivePath<AppRoute>(
-        IndexedStackPath,
-        coordinator,
-        path,
-        this,
-      ),
+      body: buildPath(coordinator),
       bottomNavigationBar: BottomNavigationBar(
         items: [
           BottomNavigationBarItem(
@@ -410,12 +405,7 @@ class FeedLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     final path = resolvePath(coordinator);
 
-    return RouteLayout.buildPrimitivePath<AppRoute>(
-      NavigationPath,
-      coordinator,
-      path,
-      this,
-    );
+    return buildPath(coordinator);
   }
 }
 
@@ -428,12 +418,7 @@ class ProfileLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     final path = resolvePath(coordinator);
 
-    return RouteLayout.buildPrimitivePath<AppRoute>(
-      NavigationPath,
-      coordinator,
-      path,
-      this,
-    );
+    return buildPath(coordinator);
   }
 }
 ```
@@ -708,12 +693,7 @@ class HomeLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
-      body: RouteLayout.buildPrimitivePath(
-        NavigationPath,
-        coordinator,
-        coordinator.homeStack,
-        this,
-      ),
+      body: buildPath(coordinator),
     );
   }
 }
@@ -744,12 +724,7 @@ class TabLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     final path = coordinator.tabPath;
     return Scaffold(
-      body: RouteLayout.buildPrimitivePath(
-        IndexedStackPath,
-        coordinator,
-        path,
-        this,
-      ),
+      body: buildPath(coordinator),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: path.activePathIndex,
         onTap: (index) => coordinator.push(tabs[index]),

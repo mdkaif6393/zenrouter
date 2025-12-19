@@ -4,6 +4,9 @@ Shared annotations and structure for [zenrouter](https://pub.dev/packages/zenrou
 
 This package contains the annotations (`@ZenRoute`, `@ZenLayout`, `@ZenCoordinator`) and helper classes used by the `zenrouter_file_generator` to generate type-safe routes.
 
+[![Test](https://github.com/definev/zenrouter/actions/workflows/test.yml/badge.svg)](https://github.com/definev/zenrouter/actions/workflows/test.yml)
+[![Codecov - zenrouter](https://codecov.io/gh/definev/zenrouter/branch/main/graph/badge.svg?flag=zenrouter)](https://app.codecov.io/gh/definev/zenrouter?branch=main&flags=zenrouter)
+
 ## Installation
 
 This package is usually added automatically when using `zenrouter_file_generator`.

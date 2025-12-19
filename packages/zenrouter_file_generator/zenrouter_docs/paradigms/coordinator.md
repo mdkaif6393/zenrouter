@@ -87,12 +87,7 @@ class HomeLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
-      body: RouteLayout.buildPrimitivePath(
-        NavigationPath,
-        coordinator,
-        coordinator.homeStack,
-        this,
-      ),
+      body: buildPath(coordinator),
     );
   }
 }
@@ -118,12 +113,7 @@ class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
         children: [
           // Tab content
           Expanded(
-            child: RouteLayout.buildPrimitivePath(
-              IndexedStackPath,
-              coordinator,
-              path,
-              this,
-            ),
+            child: buildPath(coordinator),
           ),
           
           // Tab bar
@@ -319,12 +309,7 @@ class SettingsLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: RouteLayout.buildPrimitivePath(
-        NavigationPath,
-        coordinator,
-        coordinator.settingsStack,
-        this,
-      ),
+      body: buildPath(coordinator),
     );
   }
   
@@ -623,12 +608,7 @@ class HomeLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
-      body: RouteLayout.buildPrimitivePath(
-        NavigationPath,
-        coordinator,
-        coordinator.homeStack,
-        this,
-      ),
+      body: buildPath(coordinator),
     );
   }
 }
@@ -659,12 +639,7 @@ class TabLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     final path = coordinator.tabPath;
     return Scaffold(
-      body: RouteLayout.buildPrimitivePath(
-        IndexedStackPath,
-        coordinator,
-        path,
-        this,
-      ),
+      body: buildPath(coordinator),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: path.activePathIndex,
         onTap: (index) => coordinator.push(tabs[index]),

@@ -176,9 +176,7 @@ class ZenRoute {
 ///   Widget build(AppCoordinator coordinator, BuildContext context) {
 ///     return Scaffold(
 ///       appBar: AppBar(title: Text('Settings')),
-///       body: RouteLayout.buildPrimitivePath(
-///         NavigationPath, coordinator, resolvePath(coordinator), this,
-///       ),
+///       body: buildPath(coordinator),
 ///     );
 ///   }
 /// }
@@ -199,9 +197,7 @@ class ZenRoute {
 ///   Widget build(AppCoordinator coordinator, BuildContext context) {
 ///     final path = resolvePath(coordinator);
 ///     return Scaffold(
-///       body: RouteLayout.buildPrimitivePath(
-///         IndexedStackPath, coordinator, path, this,
-///       ),
+///       body: buildPath(coordinator),
 ///       bottomNavigationBar: BottomNavigationBar(
 ///         currentIndex: path.activePathIndex,
 ///         onTap: (i) => coordinator.push(path.stack[i]),

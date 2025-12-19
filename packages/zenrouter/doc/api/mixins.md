@@ -236,12 +236,7 @@ class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
     final path = coordinator.tabPath;
     
     return Scaffold(
-      body: RouteLayout.buildPrimitivePath(
-        IndexedStackPath,
-        coordinator,
-        path,
-        this,
-      ),
+      body: buildPath(coordinator),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: path.activePathIndex,
         onTap: (index) => switch (index) {
@@ -298,12 +293,7 @@ class SettingsLayout extends AppRoute with RouteLayout<AppRoute> {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: RouteLayout.buildPrimitivePath(
-        NavigationPath,
-        coordinator,
-        coordinator.settingsStack,
-        this,
-      ),
+      body: buildPath(coordinator),
     );
   }
   
@@ -358,12 +348,7 @@ class AppLayout extends AppRoute with RouteLayout<AppRoute> {
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
-      body: RouteLayout.buildPrimitivePath(
-        NavigationPath,
-        coordinator,
-        coordinator.mainStack,
-        this,
-      ),
+      body: buildPath(coordinator),
     );
   }
 }
@@ -383,12 +368,7 @@ class TabBarLayout extends AppRoute with RouteLayout<AppRoute> {
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
-      body: RouteLayout.buildPrimitivePath(
-        IndexedStackPath,
-        coordinator,
-        coordinator.tabPath,
-        this,
-      ),
+      body: buildPath(coordinator),
       bottomNavigationBar: BottomNavigationBar(/* ... */),
     );
   }
@@ -408,12 +388,7 @@ class FeedLayout extends AppRoute with RouteLayout<AppRoute> {
   
   @override
   Widget build(AppCoordinator coordinator, BuildContext context) {
-    return RouteLayout.buildPrimitivePath(
-      NavigationPath,
-      coordinator,
-      coordinator.feedStack,
-      this,
-    );
+    return buildPath(coordinator);
   }
 }
 

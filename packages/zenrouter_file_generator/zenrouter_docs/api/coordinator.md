@@ -458,12 +458,7 @@ Builds the root widget (the primary navigator).
 @override
 Widget layoutBuilder(BuildContext context) {
   return Scaffold(
-    body: RouteLayout.buildPrimitivePath(
-      NavigationPath,
-      this,
-      root,
-      null,
-    ),
+    body: RouteLayout.buildRoot(this),
     drawer: Drawer(
       child: DrawerContent(),
     ),
@@ -475,12 +470,7 @@ Widget layoutBuilder(BuildContext context) {
 ```dart
 @override
 Widget layoutBuilder(BuildContext context) {
-  return RouteLayout.buildPrimitivePath(
-    NavigationPath,
-    this,
-    root,
-    null,
-  );
+  return RouteLayout.buildRoot(this);
 }
 ```
 

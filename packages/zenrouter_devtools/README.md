@@ -2,6 +2,8 @@
 
 A powerful debugging tool for [ZenRouter](https://pub.dev/packages/zenrouter), providing a visual overlay to inspect navigation stacks, test deep links, and manage routes.
 
+[![Codecov - zenrouter](https://codecov.io/gh/definev/zenrouter/branch/main/graph/badge.svg?flag=zenrouter)](https://app.codecov.io/gh/definev/zenrouter?branch=main&flags=zenrouter)
+
 ## Features
 
 - **Visual Stack Inspection**: View the current navigation hierarchy, including active paths, nested routers, and their stack history.

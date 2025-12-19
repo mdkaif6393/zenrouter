@@ -1,7 +1,7 @@
 # ZenRouter File Generator
 
 [![Test](https://github.com/definev/zenrouter/actions/workflows/test.yml/badge.svg)](https://github.com/definev/zenrouter/actions/workflows/test.yml)
-[![Coverage](https://definev.github.io/zenrouter/badges/coverage-zenrouter_file_generator.svg)](https://github.com/definev/zenrouter/actions)
+[![Codecov - zenrouter](https://codecov.io/gh/definev/zenrouter/branch/main/graph/badge.svg?flag=zenrouter)](https://app.codecov.io/gh/definev/zenrouter?branch=main&flags=zenrouter)
 
 A code generator for **file-based routing** in Flutter using [zenrouter](https://pub.dev/packages/zenrouter). Generate type-safe routes from your file/directory structure, similar to Next.js, Nuxt.js or expo-router.
 
@@ -225,9 +225,7 @@ class TabsLayout extends _$TabsLayout {
     final path = resolvePath(coordinator);
     
     return Scaffold(
-      body: RouteLayout.buildPrimitivePath(
-        IndexedStackPath, coordinator, path, this,
-      ),
+      body: buildPath(coordinator),
       // You control the UI completely
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: path.activePathIndex,
@@ -340,12 +338,7 @@ class AuthLayout extends _$AuthLayout {
         decoration: const BoxDecoration(
           gradient: LinearGradient(colors: [Colors.purple, Colors.blue]),
         ),
-        child: RouteLayout.buildPrimitivePath(
-          NavigationPath,
-          coordinator,
-          resolvePath(coordinator),
-          this,
-        ),
+        child: buildPath(coordinator),
       ),
     );
   }
@@ -565,9 +558,7 @@ class SettingsLayout extends _$SettingsLayout {
   Widget build(AppCoordinator coordinator, BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: RouteLayout.buildPrimitivePath(
-        NavigationPath, coordinator, resolvePath(coordinator), this,
-      ),
+      body: buildPath(coordinator),
     );
   }
 }
@@ -588,9 +579,7 @@ class TabsLayout extends _$TabsLayout {
     final path = resolvePath(coordinator);
     
     return Scaffold(
-      body: RouteLayout.buildPrimitivePath(
-        IndexedStackPath, coordinator, path, this,
-      ),
+      body: buildPath(coordinator),
       // Full control over navigation UI
       bottomNavigationBar: YourNavigationWidget(
         index: path.activePathIndex,
