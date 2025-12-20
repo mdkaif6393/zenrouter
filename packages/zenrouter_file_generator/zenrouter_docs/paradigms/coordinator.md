@@ -32,8 +32,19 @@ A `Coordinator` manages multiple `StackPath`s and provides:
 ```dart
 class AppCoordinator extends Coordinator<AppRoute> {
   // Define multiple paths for nested navigation
-  final NavigationPath<AppRoute> homeStack = NavigationPath();
-  final IndexedStackPath<AppRoute> tabStack = IndexedStackPath([...]);
+  final NavigationPath<AppRoute> homeStack = NavigationPath.createWith(
+    coordinator: this,
+    name: 'home',
+  );
+  final IndexedStackPath<AppRoute> tabStack = IndexedStackPath.createWith(
+    coordinator: this,
+    name: 'tab',
+    children: [
+      FeedTab(),
+      ProfileTab(),
+      SettingsTab(),
+    ],
+  );
   
   @override
   List<StackPath> get paths => [root, homeStack, tabStack];
@@ -371,8 +382,14 @@ class PrivacySettings extends AppRoute {
 ```dart
 class AppCoordinator extends Coordinator<AppRoute> {
   // Define navigation paths
-  final NavigationPath<AppRoute> homeStack = NavigationPath('home');
-  final NavigationPath<AppRoute> settingsStack = NavigationPath('settings');
+  final NavigationPath<AppRoute> homeStack = NavigationPath.createWith(
+    coordinator: this,
+    name: 'home',
+  );
+  final NavigationPath<AppRoute> settingsStack = NavigationPath.createWith(
+    coordinator: this,
+    name: 'settings',
+  );
   final IndexedStackPath<AppRoute> tabIndexed = IndexedStackPath([
     FeedTab(),
     ProfileTab(),

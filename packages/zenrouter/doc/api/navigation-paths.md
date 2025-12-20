@@ -384,7 +384,7 @@ Navigates to a specific route by reference.
 **Example:**
 ```dart
 final profileTab = ProfileTab();
-final tabPath = FixedNavigationPath([
+final tabPath = IndexedStackPath.create([
   FeedTab(),
   profileTab,
   SettingsTab(),

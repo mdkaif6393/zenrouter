@@ -51,12 +51,19 @@ abstract class Coordinator<T extends RouteUnique> {
 ```dart
 class AppCoordinator extends Coordinator<AppRoute> {
   // Define navigation paths
-  final NavigationPath<AppRoute> homeStack = NavigationPath('home');
-  final FixedNavigationPath<AppRoute> tabPath = FixedNavigationPath([
-    FeedTab(),
-    ProfileTab(),
-    SettingsTab(),
-  ]);
+  late final NavigationPath<AppRoute> homeStack = NavigationPath.createWith(
+    coordinator: this,
+    name: 'home',
+  );
+  final IndexedStackPath<AppRoute> tabPath = IndexedStackPath.createWith(
+    coordinator: this,
+    name: 'tab',
+    [
+      FeedTab(),
+      ProfileTab(),
+      SettingsTab(),
+    ],
+  );
   
   @override
   List<StackPath> get paths => [root, homeStack, tabPath];

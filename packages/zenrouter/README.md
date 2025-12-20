@@ -77,7 +77,7 @@ class Profile extends RouteTarget {
   List<Object?> get props => [id];
 }
 
-final appPath = NavigationPath();
+final appPath = NavigationPath.create();
 ```
 
 Now that the setup is complete, let's wire up the navigation. The `NavigationStack` widget expects two main parameters:
