@@ -1,3 +1,6 @@
+## 0.4.0
+- Update README.md
+
 ## 0.3.1
 - Add support for lazy loading routes using the `deferredImport` option in the `@ZenCoordinator` annotation.
 

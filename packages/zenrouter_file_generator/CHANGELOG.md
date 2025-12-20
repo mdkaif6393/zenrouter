@@ -1,5 +1,6 @@
 ## 0.4.1
 - **Docs**: Improve documentation and update outdated examples
+- Bump zenrouter_file_annotation to 0.4.0
 
 ## 0.4.0
 - **BREAKING CHANGE**: Upgraded generated code to use `zenrouter` 0.4.0+ constructor syntax (`NavigationPath.createWith`/`IndexedStackPath.createWith`). Requires `zenrouter: ^0.4.0`.
