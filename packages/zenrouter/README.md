@@ -1,6 +1,6 @@
 <div align="center">
 
-![Logo](https://github.com/definev/zenrouter/blob/main/assets/logo.png?raw=true)
+<img src="https://github.com/definev/zenrouter/blob/main/assets/logo.png?raw=true" width="300" alt="Logo">
 
 # ZenRouter 🧘
 
