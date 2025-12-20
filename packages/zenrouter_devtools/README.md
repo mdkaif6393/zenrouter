@@ -1,8 +1,15 @@
+<div align="center">
+
+![Logo](https://github.com/definev/zenrouter/blob/main/assets/logo.png?raw=true)
+
 # ZenRouter DevTools
 
 A powerful debugging tool for [ZenRouter](https://pub.dev/packages/zenrouter), providing a visual overlay to inspect navigation stacks, test deep links, and manage routes.
 
+[![pub package](https://img.shields.io/pub/v/zenrouter_devtools.svg)](https://pub.dev/packages/zenrouter_devtools)
 [![Codecov - zenrouter](https://codecov.io/gh/definev/zenrouter/branch/main/graph/badge.svg?flag=zenrouter)](https://app.codecov.io/gh/definev/zenrouter?branch=main&flags=zenrouter)
+
+</div>
 
 ## Features
 

@@ -1,7 +1,14 @@
+<div align="center">
+
+![Logo](https://github.com/definev/zenrouter/blob/main/assets/logo.png?raw=true)
+
 # ZenRouter File Generator
 
+[![pub package](https://img.shields.io/pub/v/zenrouter_file_generator.svg)](https://pub.dev/packages/zenrouter_file_generator)
 [![Test](https://github.com/definev/zenrouter/actions/workflows/test.yml/badge.svg)](https://github.com/definev/zenrouter/actions/workflows/test.yml)
 [![Codecov - zenrouter](https://codecov.io/gh/definev/zenrouter/branch/main/graph/badge.svg?flag=zenrouter)](https://app.codecov.io/gh/definev/zenrouter?branch=main&flags=zenrouter)
+
+</div>
 
 A code generator for **file-based routing** in Flutter using [zenrouter](https://pub.dev/packages/zenrouter). Generate type-safe routes from your file/directory structure, similar to Next.js, Nuxt.js or expo-router.
 

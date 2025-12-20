@@ -1,11 +1,18 @@
+<div align="center">
+
+![Logo](https://github.com/definev/zenrouter/blob/main/assets/logo.png?raw=true)
+
 # ZenRouter File Annotation
 
 Shared annotations and structure for [zenrouter](https://pub.dev/packages/zenrouter) file-based routing.
 
 This package contains the annotations (`@ZenRoute`, `@ZenLayout`, `@ZenCoordinator`) and helper classes used by the `zenrouter_file_generator` to generate type-safe routes.
 
+[![pub package](https://img.shields.io/pub/v/zenrouter_file_annotation.svg)](https://pub.dev/packages/zenrouter_file_annotation)
 [![Test](https://github.com/definev/zenrouter/actions/workflows/test.yml/badge.svg)](https://github.com/definev/zenrouter/actions/workflows/test.yml)
 [![Codecov - zenrouter](https://codecov.io/gh/definev/zenrouter/branch/main/graph/badge.svg?flag=zenrouter)](https://app.codecov.io/gh/definev/zenrouter?branch=main&flags=zenrouter)
+
+</div>
 
 ## Installation
 

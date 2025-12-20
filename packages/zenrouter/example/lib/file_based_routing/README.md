@@ -1,4 +1,10 @@
+<div align="center">
+
+![Logo](https://github.com/definev/zenrouter/blob/main/assets/logo.png?raw=true)
+
 ## File-based routing example with `zenrouter_file_generator`
+
+</div>
 
 This example shows how to use **`zenrouter_file_generator`** to get Next.js / Nuxt.js–style **file-based routing** on top of `zenrouter`.
 
