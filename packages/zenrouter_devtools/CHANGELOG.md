@@ -1,3 +1,7 @@
+## 0.4.0
+- Create `example` app
+- Update README.md
+
 ## 0.3.1
 - Bump zenrouter version to 0.4.0
 
