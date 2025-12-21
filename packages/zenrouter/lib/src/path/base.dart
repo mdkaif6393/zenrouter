@@ -3,14 +3,9 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:zenrouter/src/coordinator/base.dart';
-import 'package:zenrouter/src/coordinator/observer.dart';
 import 'package:zenrouter/src/internal/diff.dart';
 import 'package:zenrouter/src/internal/equatable.dart';
-import 'package:zenrouter/src/mixin/redirect.dart';
 import 'package:zenrouter/zenrouter.dart';
-
-import '../mixin/unique.dart';
 
 part 'transition.dart';
 part 'stack.dart';
