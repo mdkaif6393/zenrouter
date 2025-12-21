@@ -1,4 +1,4 @@
-## 0.4.6
+## 0.4.5
 - Support new `RouteQueryParameters` and new dot notation flavor in naming convention.
 
 ## 0.4.1
