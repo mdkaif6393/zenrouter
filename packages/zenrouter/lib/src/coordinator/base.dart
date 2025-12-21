@@ -356,8 +356,7 @@ abstract class Coordinator<T extends RouteUnique> extends Equatable
             /// Pop until layoutIndex is on the top
             final popCount = layoutOfLayoutPath.stack.length - layoutIndex - 1;
             for (int i = 0; i < popCount; i++) {
-              final allowPop = (await layoutOfLayoutPath.pop())!;
-              if (!allowPop) return false;
+              if (!(await layoutOfLayoutPath.pop() ?? false)) return false;
             }
           }
         default:
